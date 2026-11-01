@@ -1,0 +1,48 @@
+/* Layout: tool rail | paper on a stage | properties panel. Stacks on phones. */
+:root {
+  --bg: #e9ebf0; --surface: #f7f8fb; --raised: #ffffff; --line: #d3d7e0; --fg: #1a1d26; --muted: #5d6475;
+  --accent: #2b3fb8; --accent-fg: #ffffff; --accent-soft: #dfe3f8; --stage: #d5d9e2; --shadow: rgba(20, 28, 60, .18);
+  --display: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body {
+  margin: 0; background: var(--bg); color: var(--fg); font-family: var(--ui); font-size: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+img { max-width: 100%; }
+
+header { display: flex; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
+.brand svg { flex: none; }
+.brand h1 { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  border-radius: 8px; border: 1px solid var(--line); background: var(--raised); font-weight: 500;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn svg { width: 18px; height: 18px; }
+.btn.icon { padding: 0; width: 34px; justify-content: center; }
+.btn input[type=file] { display: none; }
+
+.app { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; gap: 10px; padding-block: 0 12px; }
+
+.stage { position: relative; min-width: 0; min-height: 0; background: var(--stage); border-radius: 12px; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.paper { position: relative; background: #ffffff; box-shadow: 0 2px 14px var(--shadow); }
+.paper canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#overlay { touch-action: none; cursor: crosshair; }
+
+
+

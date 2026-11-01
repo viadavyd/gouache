@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gouache Paint</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="1" width="26" height="26" rx="7" fill="var(--accent)"/><path d="M7 19c3-1 4-8 8-9s5 4 6 6" fill="none" stroke="var(--accent-fg)" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="9" r="2.5" fill="#f5c400"/></svg>
+    <h1>Gouache</h1>
+  </div>
+  <div class="actions">
+  </div>
+</header>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <div class="paper" id="paper" data-cursor="ring">
+      <canvas id="main" width="1400" height="900"></canvas>
+      <canvas id="overlay" width="1400" height="900"></canvas>
+    </div>
+  </div>
+</div>
+
+
+<script src="app.js"></script>
+</body>
+</html>
