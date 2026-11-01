@@ -14,4 +14,4 @@ python3 -m http.server 8000
 
 ## Features
 
-- Freehand brush on a 1400 × 900 px canvas
+- Freehand brush with smoothed strokes on a 1400 × 900 px canvas

@@ -50,9 +50,10 @@ function beginStroke(p) {
   octx.beginPath(); octx.arc(p.x, p.y, widthAt(p.p) / 2, 0, Math.PI * 2); octx.fill();
 }
 function strokeTo(p) {
+  const mid = { x: (last.x + p.x) / 2, y: (last.y + p.y) / 2 };
   octx.lineWidth = widthAt(p.p);
-  octx.beginPath(); octx.moveTo(last.x, last.y); octx.lineTo(p.x, p.y); octx.stroke();
-  last = p;
+  octx.beginPath(); octx.moveTo(lastMid.x, lastMid.y); octx.quadraticCurveTo(last.x, last.y, mid.x, mid.y); octx.stroke();
+  lastMid = mid; last = p;
 }
 function commit() {
   ctx.save();
@@ -83,6 +84,10 @@ function endStroke() {
   if (!drawing) return;
   drawing = false;
   clearInterval(sprayTimer);
+  if (!SHAPES.includes(state.tool) && state.tool !== 'spray' && last) {
+    octx.lineWidth = widthAt(last.p);
+    octx.beginPath(); octx.moveTo(lastMid.x, lastMid.y); octx.lineTo(last.x, last.y); octx.stroke();
+  }
   commit();
 }
 ov.addEventListener('pointerup', endStroke);
