@@ -34,6 +34,7 @@ $('#opacity').oninput = e => {
   $('#opOut').textContent = e.target.value + '%';
 };
 $('#picker').oninput = e => setColor(e.target.value);
+$('#pressure').onchange = e => { state.pressure = e.target.checked; };
 
 /* ---------- Fit the paper to the stage ---------- */
 function fit() {
@@ -51,11 +52,11 @@ function pt(e) {
   return {
     x: (e.clientX - r.left) * W / r.width,
     y: (e.clientY - r.top) * H / r.height,
-    p: 1
+    p: e.pointerType === 'pen' ? (e.pressure || 0.5) : 1
   };
 }
 function widthAt(p) {
-  return state.size;
+  return Math.max(0.6, state.size * (state.pressure ? 0.2 + 0.8 * p : 1));
 }
 
 function beginStroke(p) {
@@ -91,7 +92,8 @@ ov.addEventListener('pointerdown', e => {
 });
 ov.addEventListener('pointermove', e => {
   if (!drawing) return;
-  const evs = [e];
+  const coalesced = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  const evs = coalesced.length ? coalesced : [e];
   for (const ev of evs) {
     const p = pt(ev);
     cur = p;

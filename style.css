@@ -59,5 +59,7 @@ header { display: flex; align-items: center; gap: 12px; padding-block: 10px; fle
 .row label { color: var(--muted); font-size: 13px; }
 .row output { font-family: var(--mono); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
 input[type=range] { width: 100%; accent-color: var(--accent); }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg); cursor: pointer; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
 
 
