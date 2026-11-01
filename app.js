@@ -11,6 +11,7 @@ const octx = ov.getContext('2d', { willReadFrequently: true });
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
 
 const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false };
+let drawing = false, start = null, last = null, lastMid = null, cur = null, sprayTimer = 0, shiftKey = false;
 let scale = 1;
 
 /* ---------- UI ---------- */
@@ -26,6 +27,67 @@ function fit() {
 new ResizeObserver(fit).observe(stage);
 
 
+/* ---------- Drawing ---------- */
+function pt(e) {
+  const r = ov.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * W / r.width,
+    y: (e.clientY - r.top) * H / r.height,
+    p: 1
+  };
+}
+function widthAt(p) {
+  return state.size;
+}
+
+function beginStroke(p) {
+  octx.clearRect(0, 0, W, H);
+  const col = state.tool === 'eraser' ? '#ffffff' : state.color;
+  octx.strokeStyle = octx.fillStyle = col;
+  octx.lineCap = octx.lineJoin = 'round';
+  ov.style.opacity = state.opacity;
+  ov.style.mixBlendMode = state.tool === 'marker' ? 'multiply' : 'normal';
+  octx.beginPath(); octx.arc(p.x, p.y, widthAt(p.p) / 2, 0, Math.PI * 2); octx.fill();
+}
+function strokeTo(p) {
+  octx.lineWidth = widthAt(p.p);
+  octx.beginPath(); octx.moveTo(last.x, last.y); octx.lineTo(p.x, p.y); octx.stroke();
+  last = p;
+}
+function commit() {
+  ctx.save();
+  ctx.globalAlpha = state.opacity;
+  ctx.globalCompositeOperation = state.tool === 'eraser' ? 'destination-out' : state.tool === 'marker' ? 'multiply' : 'source-over';
+  ctx.drawImage(ov, 0, 0);
+  ctx.restore();
+  octx.clearRect(0, 0, W, H);
+  ov.style.opacity = 1; ov.style.mixBlendMode = 'normal';
+}
+
+ov.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const p = pt(e);
+  drawing = true; start = last = lastMid = cur = p;
+  beginStroke(p);
+});
+ov.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  const evs = [e];
+  for (const ev of evs) {
+    const p = pt(ev);
+    cur = p;
+    strokeTo(p);
+  }
+});
+function endStroke() {
+  if (!drawing) return;
+  drawing = false;
+  clearInterval(sprayTimer);
+  commit();
+}
+ov.addEventListener('pointerup', endStroke);
+ov.addEventListener('pointercancel', endStroke);
+ov.addEventListener('pointerleave', endStroke);
 
 
 

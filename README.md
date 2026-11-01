@@ -11,3 +11,7 @@ Open `index.html` in a browser. To serve it locally instead:
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
+
+## Features
+
+- Freehand brush on a 1400 × 900 px canvas
