@@ -23,6 +23,23 @@
       <canvas id="overlay" width="1400" height="900"></canvas>
     </div>
   </div>
+  <aside class="panel">
+    <section class="sec">
+      <h2>Colour</h2>
+      <div class="current">
+        <div class="big" id="bigSwatch"></div>
+        <div>
+          <div class="hex" id="colorHex">#2B3FB8</div>
+        </div>
+        <label class="btn custom" title="Pick any colour">Custom<input type="color" id="picker" value="#2b3fb8"></label>
+      </div>
+    </section>
+    <section class="sec">
+      <h2 id="optTitle">Brush</h2>
+      <div class="row" id="rowSize"><label for="size">Size</label><input type="range" id="size" min="1" max="160" value="14"><output id="sizeOut">14</output></div>
+      <div class="row" id="rowOpacity"><label for="opacity">Opacity</label><input type="range" id="opacity" min="5" max="100" value="100"><output id="opOut">100%</output></div>
+    </section>
+  </aside>
 </div>
 
 

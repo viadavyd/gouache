@@ -16,13 +16,31 @@ let scale = 1;
 
 /* ---------- UI ---------- */
 
+function setSize(v) {
+  state.size = Math.max(1, Math.min(160, Math.round(v)));
+  $('#size').value = state.size; $('#sizeOut').textContent = state.size;
+}
+function setColor(hex) {
+  hex = hex.toLowerCase();
+  state.color = hex;
+  $('#bigSwatch').style.background = hex;
+  $('#colorHex').textContent = hex.toUpperCase();
+  $('#picker').value = hex;
+}
 
+$('#size').oninput = e => setSize(+e.target.value);
+$('#opacity').oninput = e => {
+  state.opacity = e.target.value / 100;
+  $('#opOut').textContent = e.target.value + '%';
+};
+$('#picker').oninput = e => setColor(e.target.value);
 
 /* ---------- Fit the paper to the stage ---------- */
 function fit() {
   const r = stage.getBoundingClientRect(), pad = r.width < 500 ? 12 : 28;
   scale = Math.max(0.05, Math.min((r.width - pad * 2) / W, (r.height - pad * 2) / H));
   paper.style.width = W * scale + 'px'; paper.style.height = H * scale + 'px';
+  setSize(state.size);
 }
 new ResizeObserver(fit).observe(stage);
 
@@ -102,5 +120,6 @@ ov.addEventListener('pointerleave', endStroke);
 
 
 /* ---------- Boot ---------- */
+setColor(state.color);
 fit();
 })();
