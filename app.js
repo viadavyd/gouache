@@ -87,6 +87,7 @@ function commit() {
 ov.addEventListener('pointerdown', e => {
   e.preventDefault();
   const p = pt(e);
+  ov.setPointerCapture(e.pointerId);
   drawing = true; start = last = lastMid = cur = p;
   beginStroke(p);
 });
@@ -112,7 +113,6 @@ function endStroke() {
 }
 ov.addEventListener('pointerup', endStroke);
 ov.addEventListener('pointercancel', endStroke);
-ov.addEventListener('pointerleave', endStroke);
 
 
 
