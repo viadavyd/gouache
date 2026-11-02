@@ -5,6 +5,7 @@
 const W = 1400, H = 900;
 const $ = s => document.querySelector(s);
 const main = $('#main'), ov = $('#overlay'), paper = $('#paper'), stage = $('#stage');
+const ring = $('#ring');
 const ctx = main.getContext('2d', { willReadFrequently: true });
 const octx = ov.getContext('2d', { willReadFrequently: true });
 
@@ -19,6 +20,7 @@ let scale = 1;
 function setSize(v) {
   state.size = Math.max(1, Math.min(160, Math.round(v)));
   $('#size').value = state.size; $('#sizeOut').textContent = state.size;
+  ring.style.width = ring.style.height = Math.max(4, state.size * scale) + 'px';
 }
 function setColor(hex) {
   hex = hex.toLowerCase();
@@ -92,6 +94,7 @@ ov.addEventListener('pointerdown', e => {
   beginStroke(p);
 });
 ov.addEventListener('pointermove', e => {
+  moveRing(e);
   if (!drawing) return;
   const coalesced = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
   const evs = coalesced.length ? coalesced : [e];
@@ -113,6 +116,15 @@ function endStroke() {
 }
 ov.addEventListener('pointerup', endStroke);
 ov.addEventListener('pointercancel', endStroke);
+ov.addEventListener('pointerleave', () => { ring.hidden = true; });
+ov.addEventListener('pointerenter', e => moveRing(e));
+function moveRing(e) {
+  if (paper.dataset.cursor !== 'ring' || e.pointerType === 'touch') { ring.hidden = true; return; }
+  const r = paper.getBoundingClientRect();
+  ring.hidden = false;
+  ring.style.left = (e.clientX - r.left) + 'px';
+  ring.style.top = (e.clientY - r.top) + 'px';
+}
 
 
 
