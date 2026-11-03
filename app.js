@@ -35,12 +35,17 @@ function setSize(v) {
   $('#size').value = state.size; $('#sizeOut').textContent = state.size;
   ring.style.width = ring.style.height = Math.max(4, state.size * scale) + 'px';
 }
+function nameFor(hex) {
+  const p = PIGMENTS.find(p => p[1].toLowerCase() === hex.toLowerCase());
+  return p ? p[0] : 'Custom mix';
+}
 function setColor(hex) {
   hex = hex.toLowerCase();
   state.color = hex;
   $('#bigSwatch').style.background = hex;
   $('#colorHex').textContent = hex.toUpperCase();
   $('#picker').value = hex;
+  $('#colorName').textContent = nameFor(hex);
   document.querySelectorAll('#swatches .sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === hex));
 }
 
