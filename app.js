@@ -9,6 +9,12 @@ const ring = $('#ring');
 const ctx = main.getContext('2d', { willReadFrequently: true });
 const octx = ov.getContext('2d', { willReadFrequently: true });
 
+const PIGMENTS = [
+  ['Ivory Black', '#1b1b1d'], ['Payne’s Grey', '#3c4a57'], ['Davy’s Grey', '#8a8d84'], ['Titanium White', '#f7f7f2'],
+  ['Cadmium Red', '#d2312a'], ['Alizarin Crimson', '#9e1b32'], ['Opera Rose', '#e0408f'], ['Cadmium Orange', '#ec7a1c'],
+  ['Cadmium Yellow', '#f5c400'], ['Yellow Ochre', '#c9952e'], ['Sap Green', '#4f7a28'], ['Viridian', '#13806b'],
+  ['Cerulean', '#2a8fc8'], ['Ultramarine', '#2b3fb8'], ['Dioxazine Violet', '#5b2a86'], ['Burnt Umber', '#5e3b23']
+];
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
 
 const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false };
@@ -16,6 +22,13 @@ let drawing = false, start = null, last = null, lastMid = null, cur = null, spra
 let scale = 1;
 
 /* ---------- UI ---------- */
+const swWrap = $('#swatches');
+PIGMENTS.forEach(([name, hex]) => {
+  const b = document.createElement('button');
+  b.className = 'sw'; b.style.background = hex; b.title = name; b.dataset.hex = hex; b.setAttribute('aria-label', name);
+  b.onclick = () => setColor(hex);
+  swWrap.appendChild(b);
+});
 
 function setSize(v) {
   state.size = Math.max(1, Math.min(160, Math.round(v)));
@@ -28,6 +41,7 @@ function setColor(hex) {
   $('#bigSwatch').style.background = hex;
   $('#colorHex').textContent = hex.toUpperCase();
   $('#picker').value = hex;
+  document.querySelectorAll('#swatches .sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === hex));
 }
 
 $('#size').oninput = e => setSize(+e.target.value);
