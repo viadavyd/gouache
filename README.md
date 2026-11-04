@@ -18,3 +18,4 @@ python3 -m http.server 8000
 - Size, opacity and colour controls
 - Pen pressure changes stroke width (stylus and drawing tablets)
 - A palette of 16 named paint colours, plus a custom colour picker
+- Undo and redo

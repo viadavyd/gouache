@@ -18,6 +18,7 @@ const PIGMENTS = [
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
 
 const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false };
+let history = [], future = [];
 let drawing = false, start = null, last = null, lastMid = null, cur = null, sprayTimer = 0, shiftKey = false;
 let scale = 1;
 
@@ -66,6 +67,27 @@ function fit() {
 }
 new ResizeObserver(fit).observe(stage);
 
+/* ---------- History ---------- */
+function snapshot() {
+  history.push(ctx.getImageData(0, 0, W, H));
+  future = [];
+  syncHistoryButtons();
+}
+function undo() {
+  if (!history.length) return;
+  future.push(ctx.getImageData(0, 0, W, H));
+  ctx.putImageData(history.pop(), 0, 0);
+  syncHistoryButtons();
+}
+function redo() {
+  if (!future.length) return;
+  history.push(ctx.getImageData(0, 0, W, H));
+  ctx.putImageData(future.pop(), 0, 0);
+  syncHistoryButtons();
+}
+function syncHistoryButtons() { $('#undo').disabled = !history.length; $('#redo').disabled = !future.length; }
+$('#undo').onclick = undo;
+$('#redo').onclick = redo;
 
 /* ---------- Drawing ---------- */
 function pt(e) {
@@ -109,6 +131,7 @@ ov.addEventListener('pointerdown', e => {
   e.preventDefault();
   const p = pt(e);
   ov.setPointerCapture(e.pointerId);
+  snapshot();
   drawing = true; start = last = lastMid = cur = p;
   beginStroke(p);
 });
@@ -154,5 +177,6 @@ function moveRing(e) {
 
 /* ---------- Boot ---------- */
 setColor(state.color);
+syncHistoryButtons();
 fit();
 })();
