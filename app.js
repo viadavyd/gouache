@@ -3,6 +3,7 @@
 'use strict';
 
 const W = 1400, H = 900;
+const MAX_HISTORY = 20;
 const $ = s => document.querySelector(s);
 const main = $('#main'), ov = $('#overlay'), paper = $('#paper'), stage = $('#stage');
 const ring = $('#ring');
@@ -70,6 +71,7 @@ new ResizeObserver(fit).observe(stage);
 /* ---------- History ---------- */
 function snapshot() {
   history.push(ctx.getImageData(0, 0, W, H));
+  if (history.length > MAX_HISTORY) history.shift();
   future = [];
   syncHistoryButtons();
 }
