@@ -171,6 +171,12 @@ function moveRing(e) {
 }
 
 
+/* ---------- Clear ---------- */
+function clearCanvas() {
+  snapshot();
+  ctx.clearRect(0, 0, W, H);
+}
+$('#clear').onclick = clearCanvas;
 
 
 
