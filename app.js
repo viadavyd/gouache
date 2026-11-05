@@ -175,12 +175,28 @@ function moveRing(e) {
 function clearCanvas() {
   snapshot();
   ctx.clearRect(0, 0, W, H);
+  toast('Canvas cleared', 'Undo', undo);
 }
 $('#clear').onclick = clearCanvas;
 
 
 
 
+/* ---------- Toast ---------- */
+let toastTimer = 0;
+function toast(msg, action, fn) {
+  const t = $('#toast');
+  t.innerHTML = ''; t.append(msg);
+  if (action) {
+    const b = document.createElement('button');
+    b.textContent = action;
+    b.onclick = () => { fn(); t.hidden = true; };
+    t.append(b);
+  }
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
+}
 
 
 /* ---------- Boot ---------- */
