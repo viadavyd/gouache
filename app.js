@@ -130,6 +130,7 @@ function commit() {
 }
 
 ov.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
   e.preventDefault();
   const p = pt(e);
   ov.setPointerCapture(e.pointerId);
