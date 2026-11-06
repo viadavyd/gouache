@@ -25,6 +25,7 @@ const TOOLS = [
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
 
 const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false };
+const sizes = { brush: 14, marker: 28, spray: 40, eraser: 40, line: 6, rect: 6, ellipse: 6 };
 let history = [], future = [];
 let drawing = false, start = null, last = null, lastMid = null, cur = null, sprayTimer = 0, shiftKey = false;
 let scale = 1;
@@ -48,8 +49,10 @@ PIGMENTS.forEach(([name, hex]) => {
 });
 
 function setTool(id) {
+  if (STROKE_TOOLS.includes(state.tool) || SHAPES.includes(state.tool)) sizes[state.tool] = state.size;
   state.tool = id;
   document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === id));
+  if (sizes[id]) setSize(sizes[id]);
   const t = TOOLS.find(x => x.id === id);
   $('#optTitle').textContent = t.name;
   $('#rowSize').hidden = !(STROKE_TOOLS.includes(id) || SHAPES.includes(id));
