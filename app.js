@@ -129,7 +129,7 @@ function pt(e) {
   };
 }
 function widthAt(p) {
-  return Math.max(0.6, state.size * (state.pressure ? 0.2 + 0.8 * p : 1));
+  return Math.max(0.6, state.size * (state.pressure && state.tool !== 'marker' ? 0.2 + 0.8 * p : 1));
 }
 
 function beginStroke(p) {
