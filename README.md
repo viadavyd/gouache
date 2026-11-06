@@ -20,3 +20,4 @@ python3 -m http.server 8000
 - A palette of 16 named paint colours, plus a custom colour picker
 - Undo and redo
 - Clear the canvas (you can undo it)
+- Marker that blends like a highlighter, and an eraser

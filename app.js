@@ -16,6 +16,12 @@ const PIGMENTS = [
   ['Cadmium Yellow', '#f5c400'], ['Yellow Ochre', '#c9952e'], ['Sap Green', '#4f7a28'], ['Viridian', '#13806b'],
   ['Cerulean', '#2a8fc8'], ['Ultramarine', '#2b3fb8'], ['Dioxazine Violet', '#5b2a86'], ['Burnt Umber', '#5e3b23']
 ];
+const ic = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const TOOLS = [
+  { id: 'brush', name: 'Brush', key: 'B', icon: ic('<path d="M18 3 9 12l3 3 9-9a2.1 2.1 0 0 0-3-3Z"/><path d="M9 12c-3 0-5 2-5 5 0 1.5-1 2.5-2 3 4 1 9 0 10-5"/>') },
+  { id: 'marker', name: 'Marker', key: 'M', icon: ic('<path d="m15 4 5 5-9 9H6v-5Z"/><path d="M4 21h8"/>') },
+  { id: 'eraser', name: 'Eraser', key: 'E', icon: ic('<path d="m7 20-4-4L14 5l6 6-9 9Z"/><path d="M7 20h13M9 10l6 6"/>') },
+];
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
 
 const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false };
@@ -24,6 +30,15 @@ let drawing = false, start = null, last = null, lastMid = null, cur = null, spra
 let scale = 1;
 
 /* ---------- UI ---------- */
+const rail = $('#rail');
+TOOLS.forEach(t => {
+  if (t === 'sep') { rail.insertAdjacentHTML('beforeend', '<div class="sep"></div>'); return; }
+  const b = document.createElement('button');
+  b.className = 'tool'; b.dataset.tool = t.id; b.title = t.name; b.setAttribute('aria-label', t.name);
+  b.innerHTML = t.icon;
+  b.onclick = () => setTool(t.id);
+  rail.appendChild(b);
+});
 const swWrap = $('#swatches');
 PIGMENTS.forEach(([name, hex]) => {
   const b = document.createElement('button');
@@ -32,6 +47,16 @@ PIGMENTS.forEach(([name, hex]) => {
   swWrap.appendChild(b);
 });
 
+function setTool(id) {
+  state.tool = id;
+  document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === id));
+  const t = TOOLS.find(x => x.id === id);
+  $('#optTitle').textContent = t.name;
+  $('#rowSize').hidden = !(STROKE_TOOLS.includes(id) || SHAPES.includes(id));
+  $('#rowOpacity').hidden = id === 'picker';
+  $('#rowPressure').hidden = !['brush', 'marker', 'eraser'].includes(id);
+  paper.dataset.cursor = (id === 'fill' || id === 'picker' || SHAPES.includes(id)) ? 'cross' : 'ring';
+}
 function setSize(v) {
   state.size = Math.max(1, Math.min(160, Math.round(v)));
   $('#size').value = state.size; $('#sizeOut').textContent = state.size;
@@ -202,6 +227,7 @@ function toast(msg, action, fn) {
 
 /* ---------- Boot ---------- */
 setColor(state.color);
+setTool('brush');
 syncHistoryButtons();
 fit();
 })();
