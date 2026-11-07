@@ -25,6 +25,7 @@ header { display: flex; align-items: center; gap: 12px; padding-block: 10px; fle
 .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
 .brand svg { flex: none; }
 .brand h1 { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+.brand .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .btn {
   display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
