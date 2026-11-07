@@ -20,6 +20,7 @@ const ic = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const TOOLS = [
   { id: 'brush', name: 'Brush', key: 'B', icon: ic('<path d="M18 3 9 12l3 3 9-9a2.1 2.1 0 0 0-3-3Z"/><path d="M9 12c-3 0-5 2-5 5 0 1.5-1 2.5-2 3 4 1 9 0 10-5"/>') },
   { id: 'marker', name: 'Marker', key: 'M', icon: ic('<path d="m15 4 5 5-9 9H6v-5Z"/><path d="M4 21h8"/>') },
+  { id: 'spray', name: 'Spray', key: 'S', icon: ic('<rect x="5" y="9" width="8" height="12" rx="2"/><path d="M7 9V6h4v3"/><circle cx="17" cy="5" r=".6"/><circle cx="20" cy="7" r=".6"/><circle cx="17" cy="9" r=".6"/><circle cx="20" cy="3" r=".6"/>') },
   { id: 'eraser', name: 'Eraser', key: 'E', icon: ic('<path d="m7 20-4-4L14 5l6 6-9 9Z"/><path d="M7 20h13M9 10l6 6"/>') },
 ];
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
@@ -139,6 +140,7 @@ function beginStroke(p) {
   octx.lineCap = octx.lineJoin = 'round';
   ov.style.opacity = state.opacity;
   ov.style.mixBlendMode = state.tool === 'marker' ? 'multiply' : 'normal';
+  if (state.tool === 'spray') { spray(p); return; }
   octx.beginPath(); octx.arc(p.x, p.y, widthAt(p.p) / 2, 0, Math.PI * 2); octx.fill();
 }
 function strokeTo(p) {
@@ -146,6 +148,14 @@ function strokeTo(p) {
   octx.lineWidth = widthAt(p.p);
   octx.beginPath(); octx.moveTo(lastMid.x, lastMid.y); octx.quadraticCurveTo(last.x, last.y, mid.x, mid.y); octx.stroke();
   lastMid = mid; last = p;
+}
+function spray(p) {
+  const R = state.size, n = Math.max(6, Math.round(R * 0.7));
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * R;
+    const s = Math.random() < 0.15 ? 2.2 : 1.3;
+    octx.fillRect(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, s, s);
+  }
 }
 function commit() {
   ctx.save();
@@ -174,6 +184,7 @@ ov.addEventListener('pointermove', e => {
   for (const ev of evs) {
     const p = pt(ev);
     cur = p;
+    if (state.tool === 'spray') { spray(p); continue; }
     strokeTo(p);
   }
 });
