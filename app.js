@@ -140,7 +140,7 @@ function beginStroke(p) {
   octx.lineCap = octx.lineJoin = 'round';
   ov.style.opacity = state.opacity;
   ov.style.mixBlendMode = state.tool === 'marker' ? 'multiply' : 'normal';
-  if (state.tool === 'spray') { spray(p); return; }
+  if (state.tool === 'spray') { spray(p); sprayTimer = setInterval(() => cur && spray(cur), 24); return; }
   octx.beginPath(); octx.arc(p.x, p.y, widthAt(p.p) / 2, 0, Math.PI * 2); octx.fill();
 }
 function strokeTo(p) {
