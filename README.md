@@ -23,3 +23,4 @@ python3 -m http.server 8000
 - Marker that blends like a highlighter, and an eraser
 - Spray can
 - Line, rectangle and ellipse tools
+- Hold Shift for 45° lines, squares and circles

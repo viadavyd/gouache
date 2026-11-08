@@ -165,6 +165,15 @@ function spray(p) {
 function shape(p) {
   octx.clearRect(0, 0, W, H);
   let x0 = start.x, y0 = start.y, x1 = p.x, y1 = p.y;
+  if (shiftKey) {
+    if (state.tool === 'line') {
+      const ang = Math.round(Math.atan2(y1 - y0, x1 - x0) / (Math.PI / 4)) * (Math.PI / 4), len = Math.hypot(x1 - x0, y1 - y0);
+      x1 = x0 + Math.cos(ang) * len; y1 = y0 + Math.sin(ang) * len;
+    } else {
+      const m = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+      x1 = x0 + Math.sign(x1 - x0 || 1) * m; y1 = y0 + Math.sign(y1 - y0 || 1) * m;
+    }
+  }
   octx.lineWidth = state.size;
   octx.lineJoin = state.tool === 'rect' ? 'miter' : 'round';
   octx.beginPath();
@@ -187,6 +196,7 @@ ov.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   e.preventDefault();
   const p = pt(e);
+  shiftKey = e.shiftKey;
   ov.setPointerCapture(e.pointerId);
   snapshot();
   drawing = true; start = last = lastMid = cur = p;
@@ -195,6 +205,7 @@ ov.addEventListener('pointerdown', e => {
 ov.addEventListener('pointermove', e => {
   moveRing(e);
   if (!drawing) return;
+  shiftKey = e.shiftKey;
   const coalesced = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
   const evs = coalesced.length ? coalesced : [e];
   for (const ev of evs) {
