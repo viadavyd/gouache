@@ -166,6 +166,7 @@ function shape(p) {
   octx.clearRect(0, 0, W, H);
   let x0 = start.x, y0 = start.y, x1 = p.x, y1 = p.y;
   octx.lineWidth = state.size;
+  octx.lineJoin = state.tool === 'rect' ? 'miter' : 'round';
   octx.beginPath();
   if (state.tool === 'line') { octx.moveTo(x0, y0); octx.lineTo(x1, y1); }
   else if (state.tool === 'rect') octx.rect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
