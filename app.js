@@ -22,6 +22,10 @@ const TOOLS = [
   { id: 'marker', name: 'Marker', key: 'M', icon: ic('<path d="m15 4 5 5-9 9H6v-5Z"/><path d="M4 21h8"/>') },
   { id: 'spray', name: 'Spray', key: 'S', icon: ic('<rect x="5" y="9" width="8" height="12" rx="2"/><path d="M7 9V6h4v3"/><circle cx="17" cy="5" r=".6"/><circle cx="20" cy="7" r=".6"/><circle cx="17" cy="9" r=".6"/><circle cx="20" cy="3" r=".6"/>') },
   { id: 'eraser', name: 'Eraser', key: 'E', icon: ic('<path d="m7 20-4-4L14 5l6 6-9 9Z"/><path d="M7 20h13M9 10l6 6"/>') },
+  'sep',
+  { id: 'line', name: 'Line', key: 'L', icon: ic('<path d="M5 19 19 5"/>') },
+  { id: 'rect', name: 'Rectangle', key: 'R', icon: ic('<rect x="4" y="6" width="16" height="12" rx="1"/>') },
+  { id: 'ellipse', name: 'Ellipse', key: 'O', icon: ic('<ellipse cx="12" cy="12" rx="8" ry="6"/>') },
 ];
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
 
@@ -141,6 +145,7 @@ function beginStroke(p) {
   ov.style.opacity = state.opacity;
   ov.style.mixBlendMode = state.tool === 'marker' ? 'multiply' : 'normal';
   if (state.tool === 'spray') { spray(p); sprayTimer = setInterval(() => cur && spray(cur), 24); return; }
+  if (SHAPES.includes(state.tool)) return;
   octx.beginPath(); octx.arc(p.x, p.y, widthAt(p.p) / 2, 0, Math.PI * 2); octx.fill();
 }
 function strokeTo(p) {
@@ -156,6 +161,16 @@ function spray(p) {
     const s = Math.random() < 0.15 ? 2.2 : 1.3;
     octx.fillRect(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, s, s);
   }
+}
+function shape(p) {
+  octx.clearRect(0, 0, W, H);
+  let x0 = start.x, y0 = start.y, x1 = p.x, y1 = p.y;
+  octx.lineWidth = state.size;
+  octx.beginPath();
+  if (state.tool === 'line') { octx.moveTo(x0, y0); octx.lineTo(x1, y1); }
+  else if (state.tool === 'rect') octx.rect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+  else octx.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.abs(x1 - x0) / 2, Math.abs(y1 - y0) / 2, 0, 0, Math.PI * 2);
+  octx.stroke();
 }
 function commit() {
   ctx.save();
@@ -184,9 +199,11 @@ ov.addEventListener('pointermove', e => {
   for (const ev of evs) {
     const p = pt(ev);
     cur = p;
+    if (SHAPES.includes(state.tool)) continue;
     if (state.tool === 'spray') { spray(p); continue; }
     strokeTo(p);
   }
+  if (SHAPES.includes(state.tool)) shape(cur);
 });
 function endStroke() {
   if (!drawing) return;
