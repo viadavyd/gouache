@@ -63,6 +63,7 @@ function setTool(id) {
   $('#rowSize').hidden = !(STROKE_TOOLS.includes(id) || SHAPES.includes(id));
   $('#rowOpacity').hidden = id === 'picker';
   $('#rowPressure').hidden = !['brush', 'marker', 'eraser'].includes(id);
+  $('#rowFillShape').hidden = !['rect', 'ellipse'].includes(id);
   paper.dataset.cursor = (id === 'fill' || id === 'picker' || SHAPES.includes(id)) ? 'cross' : 'ring';
 }
 function setSize(v) {
@@ -91,6 +92,9 @@ $('#opacity').oninput = e => {
 };
 $('#picker').oninput = e => setColor(e.target.value);
 $('#pressure').onchange = e => { state.pressure = e.target.checked; };
+$('#fillShape').onchange = e => {
+  state.fillShape = e.target.checked;
+};
 
 /* ---------- Fit the paper to the stage ---------- */
 function fit() {
@@ -180,6 +184,7 @@ function shape(p) {
   if (state.tool === 'line') { octx.moveTo(x0, y0); octx.lineTo(x1, y1); }
   else if (state.tool === 'rect') octx.rect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
   else octx.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.abs(x1 - x0) / 2, Math.abs(y1 - y0) / 2, 0, 0, Math.PI * 2);
+  if (state.fillShape && state.tool !== 'line') octx.fill();
   octx.stroke();
 }
 function commit() {
