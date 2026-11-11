@@ -278,7 +278,11 @@ function floodFill(p) {
   const out = octx.createImageData(W, H), o = new Uint32Array(out.data.buffer);
   const n = parseInt(state.color.slice(1), 16);
   const col = (255 << 24) | ((n & 255) << 16) | (((n >> 8) & 255) << 8) | (n >> 16);
-  for (let i = 0; i < W * H; i++) if (mask[i]) o[i] = col;
+  // Grow the mask by one pixel so fills tuck under anti-aliased edges.
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (mask[i] || (x > 0 && mask[i - 1]) || (x < W - 1 && mask[i + 1]) || (y > 0 && mask[i - W]) || (y < H - 1 && mask[i + W])) o[i] = col;
+  }
   snapshot();
   octx.putImageData(out, 0, 0);
   commit();
