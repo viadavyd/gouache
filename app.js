@@ -250,6 +250,7 @@ function moveRing(e) {
 /* ---------- Fill bucket ---------- */
 function floodFill(p) {
   const sx = Math.floor(p.x), sy = Math.floor(p.y);
+  if (sx < 0 || sy < 0 || sx >= W || sy >= H) return;
   const img = ctx.getImageData(0, 0, W, H), d = img.data, tol = state.tol;
   // Compare colours as they look on the white paper.
   const R = new Uint8ClampedArray(W * H), G = new Uint8ClampedArray(W * H), B = new Uint8ClampedArray(W * H);
