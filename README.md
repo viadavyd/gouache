@@ -24,3 +24,4 @@ python3 -m http.server 8000
 - Spray can
 - Line, rectangle and ellipse tools
 - Hold Shift for 45° lines, squares and circles
+- Fill bucket

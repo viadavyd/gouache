@@ -23,6 +23,8 @@ const TOOLS = [
   { id: 'spray', name: 'Spray', key: 'S', icon: ic('<rect x="5" y="9" width="8" height="12" rx="2"/><path d="M7 9V6h4v3"/><circle cx="17" cy="5" r=".6"/><circle cx="20" cy="7" r=".6"/><circle cx="17" cy="9" r=".6"/><circle cx="20" cy="3" r=".6"/>') },
   { id: 'eraser', name: 'Eraser', key: 'E', icon: ic('<path d="m7 20-4-4L14 5l6 6-9 9Z"/><path d="M7 20h13M9 10l6 6"/>') },
   'sep',
+  { id: 'fill', name: 'Fill bucket', key: 'G', icon: ic('<path d="m11 3 8 8-7 7-8-8Z"/><path d="M4 10h15"/><path d="M20 15s2 2.5 2 4a2 2 0 0 1-4 0c0-1.5 2-4 2-4Z"/>') },
+  'sep',
   { id: 'line', name: 'Line', key: 'L', icon: ic('<path d="M5 19 19 5"/>') },
   { id: 'rect', name: 'Rectangle', key: 'R', icon: ic('<rect x="4" y="6" width="16" height="12" rx="1"/>') },
   { id: 'ellipse', name: 'Ellipse', key: 'O', icon: ic('<ellipse cx="12" cy="12" rx="8" ry="6"/>') },
@@ -202,6 +204,7 @@ ov.addEventListener('pointerdown', e => {
   e.preventDefault();
   const p = pt(e);
   shiftKey = e.shiftKey;
+  if (state.tool === 'fill') { floodFill(p); return; }
   ov.setPointerCapture(e.pointerId);
   snapshot();
   drawing = true; start = last = lastMid = cur = p;
@@ -244,6 +247,41 @@ function moveRing(e) {
   ring.style.top = (e.clientY - r.top) + 'px';
 }
 
+/* ---------- Fill bucket ---------- */
+function floodFill(p) {
+  const sx = Math.floor(p.x), sy = Math.floor(p.y);
+  const img = ctx.getImageData(0, 0, W, H), d = img.data, tol = state.tol;
+  // Compare colours as they look on the white paper.
+  const R = new Uint8ClampedArray(W * H), G = new Uint8ClampedArray(W * H), B = new Uint8ClampedArray(W * H);
+  for (let i = 0, j = 0; i < W * H; i++, j += 4) {
+    const a = d[j + 3] / 255, k = 255 * (1 - a);
+    R[i] = d[j] * a + k; G[i] = d[j + 1] * a + k; B[i] = d[j + 2] * a + k;
+  }
+  const s0 = sy * W + sx, tr = R[s0], tg = G[s0], tb = B[s0];
+  const mask = new Uint8Array(W * H);
+  const ok = i => !mask[i] && Math.abs(R[i] - tr) <= tol && Math.abs(G[i] - tg) <= tol && Math.abs(B[i] - tb) <= tol;
+  const stack = [sx, sy];
+  while (stack.length) {
+    const y = stack.pop();
+    let x = stack.pop(), i = y * W + x;
+    while (x >= 0 && ok(i)) { x--; i--; }
+    x++; i++;
+    let up = false, down = false;
+    while (x < W && ok(i)) {
+      mask[i] = 1;
+      if (y > 0) { const u = i - W; if (ok(u)) { if (!up) { stack.push(x, y - 1); up = true; } } else up = false; }
+      if (y < H - 1) { const v = i + W; if (ok(v)) { if (!down) { stack.push(x, y + 1); down = true; } } else down = false; }
+      x++; i++;
+    }
+  }
+  const out = octx.createImageData(W, H), o = new Uint32Array(out.data.buffer);
+  const n = parseInt(state.color.slice(1), 16);
+  const col = (255 << 24) | ((n & 255) << 16) | (((n >> 8) & 255) << 8) | (n >> 16);
+  for (let i = 0; i < W * H; i++) if (mask[i]) o[i] = col;
+  snapshot();
+  octx.putImageData(out, 0, 0);
+  commit();
+}
 
 /* ---------- Clear ---------- */
 function clearCanvas() {
