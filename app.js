@@ -254,8 +254,8 @@ function moveRing(e) {
 /* ---------- Colour picker ---------- */
 const hex2 = n => n.toString(16).padStart(2, '0');
 function pick(p) {
-  const d = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
-  const c = [d[0], d[1], d[2]];
+  const d = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data, a = d[3] / 255;
+  const c = [0, 1, 2].map(i => Math.round(d[i] * a + 255 * (1 - a)));
   const hex = '#' + c.map(hex2).join('');
   setColor(hex);
   toast(`Picked ${hex.toUpperCase()}`);
