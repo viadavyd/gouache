@@ -64,6 +64,7 @@ function setTool(id) {
   $('#optTitle').textContent = t.name;
   $('#rowSize').hidden = !(STROKE_TOOLS.includes(id) || SHAPES.includes(id));
   $('#rowOpacity').hidden = id === 'picker';
+  $('#rowTol').hidden = id !== 'fill';
   $('#rowPressure').hidden = !['brush', 'marker', 'eraser'].includes(id);
   $('#rowFillShape').hidden = !['rect', 'ellipse'].includes(id);
   paper.dataset.cursor = (id === 'fill' || id === 'picker' || SHAPES.includes(id)) ? 'cross' : 'ring';
@@ -93,6 +94,7 @@ $('#opacity').oninput = e => {
   $('#opOut').textContent = e.target.value + '%';
 };
 $('#picker').oninput = e => setColor(e.target.value);
+$('#tol').oninput = e => { state.tol = +e.target.value; $('#tolOut').textContent = e.target.value; };
 $('#pressure').onchange = e => { state.pressure = e.target.checked; };
 $('#fillShape').onchange = e => {
   state.fillShape = e.target.checked;
