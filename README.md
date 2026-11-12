@@ -25,3 +25,4 @@ python3 -m http.server 8000
 - Line, rectangle and ellipse tools
 - Hold Shift for 45° lines, squares and circles
 - Fill bucket
+- Colour picker that samples from the canvas

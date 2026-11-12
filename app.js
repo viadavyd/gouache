@@ -24,6 +24,7 @@ const TOOLS = [
   { id: 'eraser', name: 'Eraser', key: 'E', icon: ic('<path d="m7 20-4-4L14 5l6 6-9 9Z"/><path d="M7 20h13M9 10l6 6"/>') },
   'sep',
   { id: 'fill', name: 'Fill bucket', key: 'G', icon: ic('<path d="m11 3 8 8-7 7-8-8Z"/><path d="M4 10h15"/><path d="M20 15s2 2.5 2 4a2 2 0 0 1-4 0c0-1.5 2-4 2-4Z"/>') },
+  { id: 'picker', name: 'Colour picker', key: 'I', icon: ic('<path d="m14 7 3 3"/><path d="M19.5 4.5a2.1 2.1 0 0 0-3 0L5 16v3h3L19.5 7.5a2.1 2.1 0 0 0 0-3Z"/>') },
   'sep',
   { id: 'line', name: 'Line', key: 'L', icon: ic('<path d="M5 19 19 5"/>') },
   { id: 'rect', name: 'Rectangle', key: 'R', icon: ic('<rect x="4" y="6" width="16" height="12" rx="1"/>') },
@@ -206,6 +207,7 @@ ov.addEventListener('pointerdown', e => {
   e.preventDefault();
   const p = pt(e);
   shiftKey = e.shiftKey;
+  if (state.tool === 'picker') { pick(p); return; }
   if (state.tool === 'fill') { floodFill(p); return; }
   ov.setPointerCapture(e.pointerId);
   snapshot();
@@ -249,6 +251,20 @@ function moveRing(e) {
   ring.style.top = (e.clientY - r.top) + 'px';
 }
 
+/* ---------- Colour picker ---------- */
+const hex2 = n => n.toString(16).padStart(2, '0');
+function pick(p) {
+  const d = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
+  const c = [d[0], d[1], d[2]];
+  const hex = '#' + c.map(hex2).join('');
+  setColor(hex);
+  toast(`Picked ${hex.toUpperCase()}`);
+  setTool(sizes.__prev || 'brush');
+}
+rail.addEventListener('click', e => {
+  const b = e.target.closest('.tool');
+  if (b && b.dataset.tool === 'picker') sizes.__prev = state.tool === 'picker' ? 'brush' : state.tool;
+}, true);
 /* ---------- Fill bucket ---------- */
 function floodFill(p) {
   const sx = Math.floor(p.x), sy = Math.floor(p.y);
