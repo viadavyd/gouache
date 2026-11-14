@@ -68,12 +68,15 @@ function setTool(id) {
   $('#rowTol').hidden = id !== 'fill';
   $('#rowPressure').hidden = !['brush', 'marker', 'eraser'].includes(id);
   $('#rowFillShape').hidden = !['rect', 'ellipse'].includes(id);
+  $('#preview').hidden = id === 'picker';
   paper.dataset.cursor = (id === 'fill' || id === 'picker' || SHAPES.includes(id)) ? 'cross' : 'ring';
+  drawPreview();
 }
 function setSize(v) {
   state.size = Math.max(1, Math.min(160, Math.round(v)));
   $('#size').value = state.size; $('#sizeOut').textContent = state.size;
   ring.style.width = ring.style.height = Math.max(4, state.size * scale) + 'px';
+  drawPreview();
 }
 function nameFor(hex) {
   const p = PIGMENTS.find(p => p[1].toLowerCase() === hex.toLowerCase());
@@ -87,18 +90,43 @@ function setColor(hex) {
   $('#picker').value = hex;
   $('#colorName').textContent = nameFor(hex);
   document.querySelectorAll('#swatches .sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === hex));
+  drawPreview();
+}
+function drawPreview() {
+  const pv = $('#preview'), p = pv.getContext('2d');
+  p.clearRect(0, 0, pv.width, pv.height);
+  const t = state.tool, c = t === 'eraser' ? '#c9ccd4' : state.color, s = Math.min(state.size, 90);
+  p.globalAlpha = state.opacity; p.strokeStyle = c; p.fillStyle = c; p.lineCap = p.lineJoin = 'round';
+  if (t === 'fill') { p.fillRect(20, 16, 440, 80); return; }
+  if (t === 'spray') {
+    for (let i = 0; i < 900; i++) {
+      const x = 30 + Math.random() * 420, y = 56 + (Math.random() - .5) * Math.min(s, 80) * Math.random();
+      p.fillRect(x, y, 2, 2);
+    }
+    return;
+  }
+  if (t === 'rect') { p.lineWidth = Math.min(s, 20); p.strokeRect(60, 22, 360, 68); if (state.fillShape) p.fillRect(60, 22, 360, 68); return; }
+  if (t === 'ellipse') { p.lineWidth = Math.min(s, 20); p.beginPath(); p.ellipse(240, 56, 180, 34, 0, 0, 7); p.stroke(); if (state.fillShape) p.fill(); return; }
+  p.lineWidth = s;
+  if (t === 'marker') p.globalCompositeOperation = 'multiply';
+  p.beginPath();
+  if (t === 'line') { p.moveTo(40, 90); p.lineTo(440, 22); }
+  else { p.moveTo(40, 70); p.bezierCurveTo(140, 0, 220, 120, 300, 50); p.quadraticCurveTo(360, 0, 440, 56); }
+  p.stroke(); p.globalCompositeOperation = 'source-over';
 }
 
 $('#size').oninput = e => setSize(+e.target.value);
 $('#opacity').oninput = e => {
   state.opacity = e.target.value / 100;
   $('#opOut').textContent = e.target.value + '%';
+  drawPreview();
 };
 $('#picker').oninput = e => setColor(e.target.value);
 $('#tol').oninput = e => { state.tol = +e.target.value; $('#tolOut').textContent = e.target.value; };
 $('#pressure').onchange = e => { state.pressure = e.target.checked; };
 $('#fillShape').onchange = e => {
   state.fillShape = e.target.checked;
+  drawPreview();
 };
 
 /* ---------- Fit the paper to the stage ---------- */
