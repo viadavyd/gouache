@@ -35,6 +35,7 @@ const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', '
 const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false };
 const sizes = { brush: 14, marker: 28, spray: 40, eraser: 40, line: 6, rect: 6, ellipse: 6 };
 let history = [], future = [];
+let recent = [];
 let drawing = false, start = null, last = null, lastMid = null, cur = null, sprayTimer = 0, shiftKey = false;
 let scale = 1;
 
@@ -91,6 +92,16 @@ function setColor(hex) {
   $('#colorName').textContent = nameFor(hex);
   document.querySelectorAll('#swatches .sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === hex));
   drawPreview();
+}
+function addRecent(hex) {
+  recent = [hex, ...recent.filter(c => c !== hex)].slice(0, 10);
+  const r = $('#recent'); r.innerHTML = '';
+  recent.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'sw'; b.style.background = c; b.title = c.toUpperCase(); b.setAttribute('aria-label', 'Recent colour ' + c);
+    b.onclick = () => setColor(c);
+    r.appendChild(b);
+  });
 }
 function drawPreview() {
   const pv = $('#preview'), p = pv.getContext('2d');
@@ -228,6 +239,7 @@ function commit() {
   ctx.restore();
   octx.clearRect(0, 0, W, H);
   ov.style.opacity = 1; ov.style.mixBlendMode = 'normal';
+  if (state.tool !== 'eraser') addRecent(state.color);
 }
 
 ov.addEventListener('pointerdown', e => {
@@ -286,6 +298,7 @@ function pick(p) {
   const c = [0, 1, 2].map(i => Math.round(d[i] * a + 255 * (1 - a)));
   const hex = '#' + c.map(hex2).join('');
   setColor(hex);
+  addRecent(hex);
   toast(`Picked ${hex.toUpperCase()}`);
   setTool(sizes.__prev || 'brush');
 }
