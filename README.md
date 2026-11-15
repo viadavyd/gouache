@@ -29,3 +29,4 @@ python3 -m http.server 8000
 - A live preview of the current tool
 - Recently used colours
 - Open an image onto the canvas
+- Paste an image with Ctrl+V

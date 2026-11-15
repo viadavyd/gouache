@@ -370,6 +370,10 @@ function placeImage(file) {
   im.src = url;
 }
 $('#file').onchange = e => { placeImage(e.target.files[0]); e.target.value = ''; };
+window.addEventListener('paste', e => {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (item) { e.preventDefault(); placeImage(item.getAsFile()); }
+});
 
 
 
