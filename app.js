@@ -355,6 +355,21 @@ function clearCanvas() {
 }
 $('#clear').onclick = clearCanvas;
 
+/* ---------- Importing images ---------- */
+function placeImage(file) {
+  if (!file || !file.type.startsWith('image/')) { toast('That file isn’t an image. Try a PNG, JPG, GIF or WebP.'); return; }
+  const url = URL.createObjectURL(file), im = new Image();
+  im.onload = () => {
+    snapshot();
+    const s = Math.min(W / im.width, H / im.height, 1), w = im.width * s, h = im.height * s;
+    ctx.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+    URL.revokeObjectURL(url);
+    toast('Image placed', 'Undo', undo);
+  };
+  im.onerror = () => toast('Couldn’t read that image.');
+  im.src = url;
+}
+$('#file').onchange = e => { placeImage(e.target.files[0]); e.target.value = ''; };
 
 
 

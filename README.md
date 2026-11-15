@@ -28,3 +28,4 @@ python3 -m http.server 8000
 - Colour picker that samples from the canvas
 - A live preview of the current tool
 - Recently used colours
+- Open an image onto the canvas
