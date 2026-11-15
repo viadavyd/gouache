@@ -30,3 +30,4 @@ python3 -m http.server 8000
 - Recently used colours
 - Open an image onto the canvas
 - Paste an image with Ctrl+V
+- Drag and drop images

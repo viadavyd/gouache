@@ -374,6 +374,13 @@ window.addEventListener('paste', e => {
   const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
   if (item) { e.preventDefault(); placeImage(item.getAsFile()); }
 });
+stage.addEventListener('dragenter', e => { e.preventDefault(); $('#drop').hidden = false; });
+stage.addEventListener('dragover', e => e.preventDefault());
+stage.addEventListener('dragleave', () => { $('#drop').hidden = true; });
+stage.addEventListener('drop', e => {
+  e.preventDefault(); $('#drop').hidden = true;
+  placeImage(e.dataTransfer.files[0]);
+});
 
 
 
