@@ -383,6 +383,20 @@ stage.addEventListener('drop', e => {
   placeImage(e.dataTransfer.files[0]);
 });
 
+/* ---------- Export ---------- */
+function flattened() {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H); x.drawImage(main, 0, 0);
+  return c;
+}
+$('#save').onclick = () => {
+  $('#exportImg').src = flattened().toDataURL('image/png');
+  $('#modal').hidden = false;
+  $('#closeModal').focus();
+};
+$('#closeModal').onclick = () => { $('#modal').hidden = true; };
 
 
 /* ---------- Toast ---------- */
