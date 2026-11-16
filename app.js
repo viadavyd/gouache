@@ -402,6 +402,13 @@ $('#downloadImg').onclick = () => {
   a.href = $('#exportImg').src; a.download = 'gouache.png';
   document.body.appendChild(a); a.click(); a.remove();
 };
+$('#copyImg').onclick = () => {
+  const fail = () => toast('Copying isn’t allowed here. Use Download instead.');
+  try {
+    const blob = new Promise(res => flattened().toBlob(res, 'image/png'));
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => toast('Image copied'), fail);
+  } catch { fail(); }
+};
 
 
 /* ---------- Toast ---------- */
