@@ -397,6 +397,11 @@ $('#save').onclick = () => {
   $('#closeModal').focus();
 };
 $('#closeModal').onclick = () => { $('#modal').hidden = true; };
+$('#downloadImg').onclick = () => {
+  const a = document.createElement('a');
+  a.href = $('#exportImg').src; a.download = 'gouache.png';
+  document.body.appendChild(a); a.click(); a.remove();
+};
 
 
 /* ---------- Toast ---------- */
