@@ -421,11 +421,12 @@ let saveTimer = 0;
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    localStorage.setItem(STORE, main.toDataURL('image/png'));
+    try { localStorage.setItem(STORE, main.toDataURL('image/png')); } catch { /* storage full or blocked */ }
   }, 700);
 }
 function restore() {
-  const data = localStorage.getItem(STORE);
+  let data = null;
+  try { data = localStorage.getItem(STORE); } catch { /* storage blocked */ }
   if (!data) return;
   const im = new Image();
   im.onload = () => ctx.drawImage(im, 0, 0);
