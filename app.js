@@ -4,6 +4,7 @@
 
 const W = 1400, H = 900;
 const MAX_HISTORY = 20;
+const STORE = 'gouache-canvas-v1';
 const $ = s => document.querySelector(s);
 const main = $('#main'), ov = $('#overlay'), paper = $('#paper'), stage = $('#stage');
 const ring = $('#ring');
@@ -161,12 +162,14 @@ function undo() {
   future.push(ctx.getImageData(0, 0, W, H));
   ctx.putImageData(history.pop(), 0, 0);
   syncHistoryButtons();
+  scheduleSave();
 }
 function redo() {
   if (!future.length) return;
   history.push(ctx.getImageData(0, 0, W, H));
   ctx.putImageData(future.pop(), 0, 0);
   syncHistoryButtons();
+  scheduleSave();
 }
 function syncHistoryButtons() { $('#undo').disabled = !history.length; $('#redo').disabled = !future.length; }
 $('#undo').onclick = undo;
@@ -240,6 +243,7 @@ function commit() {
   octx.clearRect(0, 0, W, H);
   ov.style.opacity = 1; ov.style.mixBlendMode = 'normal';
   if (state.tool !== 'eraser') addRecent(state.color);
+  scheduleSave();
 }
 
 ov.addEventListener('pointerdown', e => {
@@ -351,6 +355,7 @@ function floodFill(p) {
 function clearCanvas() {
   snapshot();
   ctx.clearRect(0, 0, W, H);
+  scheduleSave();
   toast('Canvas cleared', 'Undo', undo);
 }
 $('#clear').onclick = clearCanvas;
@@ -364,6 +369,7 @@ function placeImage(file) {
     const s = Math.min(W / im.width, H / im.height, 1), w = im.width * s, h = im.height * s;
     ctx.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
     URL.revokeObjectURL(url);
+    scheduleSave();
     toast('Image placed', 'Undo', undo);
   };
   im.onerror = () => toast('Couldn’t read that image.');
@@ -410,6 +416,21 @@ $('#copyImg').onclick = () => {
   } catch { fail(); }
 };
 
+/* ---------- Autosave (this browser only) ---------- */
+let saveTimer = 0;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem(STORE, main.toDataURL('image/png'));
+  }, 700);
+}
+function restore() {
+  const data = localStorage.getItem(STORE);
+  if (!data) return;
+  const im = new Image();
+  im.onload = () => ctx.drawImage(im, 0, 0);
+  im.src = data;
+}
 
 /* ---------- Toast ---------- */
 let toastTimer = 0;
@@ -433,4 +454,5 @@ setColor(state.color);
 setTool('brush');
 syncHistoryButtons();
 fit();
+restore();
 })();
