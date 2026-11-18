@@ -55,6 +55,8 @@ header { display: flex; align-items: center; gap: 12px; padding-block: 10px; fle
 #overlay { touch-action: none; cursor: crosshair; }
 .paper[data-cursor="ring"] #overlay { cursor: none; }
 .ring { position: absolute; pointer-events: none; border-radius: 50%; border: 1px solid #fff; mix-blend-mode: difference; transform: translate(-50%, -50%); left: 0; top: 0; }
+.chip { position: absolute; left: 12px; top: 12px; font-size: 12px; background: var(--raised); color: var(--fg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; display: flex; gap: 8px; align-items: center; box-shadow: 0 1px 4px var(--shadow); }
+.chip button { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 0; }
 .drop { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 22%, transparent); border: 2px dashed var(--accent); border-radius: 12px; font-weight: 600; color: var(--fg); }
 
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: auto; display: flex; flex-direction: column; }

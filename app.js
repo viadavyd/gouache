@@ -243,6 +243,7 @@ function commit() {
   octx.clearRect(0, 0, W, H);
   ov.style.opacity = 1; ov.style.mixBlendMode = 'normal';
   if (state.tool !== 'eraser') addRecent(state.color);
+  hideSample();
   scheduleSave();
 }
 
@@ -355,10 +356,40 @@ function floodFill(p) {
 function clearCanvas() {
   snapshot();
   ctx.clearRect(0, 0, W, H);
+  hideSample();
   scheduleSave();
   toast('Canvas cleared', 'Undo', undo);
 }
 $('#clear').onclick = clearCanvas;
+/* ---------- Sample sketch ---------- */
+$('#sampleClear').onclick = () => {
+  ctx.clearRect(0, 0, W, H);
+  history = []; future = []; syncHistoryButtons();
+  hideSample(); scheduleSave();
+};
+function hideSample() { $('#sample').hidden = true; }
+function paintSample() {
+  const c = ctx;
+  c.save(); c.lineCap = c.lineJoin = 'round';
+  c.globalAlpha = .35; c.fillStyle = '#2a8fc8'; c.fillRect(0, 0, W, 520);
+  c.globalAlpha = 1; c.fillStyle = '#f5c400'; c.beginPath(); c.arc(1060, 230, 110, 0, 7); c.fill();
+  c.globalAlpha = .9; c.fillStyle = '#4f7a28'; c.beginPath(); c.moveTo(0, 640);
+  c.bezierCurveTo(260, 420, 520, 470, 760, 600); c.bezierCurveTo(940, 690, 1180, 500, 1400, 560);
+  c.lineTo(1400, 900); c.lineTo(0, 900); c.fill();
+  c.fillStyle = '#13806b'; c.beginPath(); c.moveTo(0, 760);
+  c.bezierCurveTo(300, 640, 700, 720, 900, 780); c.bezierCurveTo(1100, 840, 1250, 760, 1400, 740);
+  c.lineTo(1400, 900); c.lineTo(0, 900); c.fill();
+  c.globalAlpha = 1; c.strokeStyle = '#1b1b1d'; c.lineWidth = 6;
+  [[420, 210, 34], [500, 260, 24], [600, 190, 28]].forEach(([x, y, s]) => {
+    c.beginPath(); c.moveTo(x - s, y - s * .3);
+    c.quadraticCurveTo(x - s * .4, y - s * .7, x, y); c.quadraticCurveTo(x + s * .4, y - s * .7, x + s, y - s * .3);
+    c.stroke();
+  });
+  c.strokeStyle = '#d2312a'; c.lineWidth = 10; c.beginPath(); c.moveTo(250, 560); c.lineTo(250, 470); c.stroke();
+  c.fillStyle = '#d2312a'; c.beginPath(); c.moveTo(250, 470); c.lineTo(320, 495); c.lineTo(250, 520); c.fill();
+  c.restore();
+  $('#sample').hidden = false;
+}
 
 /* ---------- Importing images ---------- */
 function placeImage(file) {
@@ -369,6 +400,7 @@ function placeImage(file) {
     const s = Math.min(W / im.width, H / im.height, 1), w = im.width * s, h = im.height * s;
     ctx.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
     URL.revokeObjectURL(url);
+    hideSample();
     scheduleSave();
     toast('Image placed', 'Undo', undo);
   };
@@ -427,9 +459,10 @@ function scheduleSave() {
 function restore() {
   let data = null;
   try { data = localStorage.getItem(STORE); } catch { /* storage blocked */ }
-  if (!data) return;
+  if (!data) { paintSample(); return; }
   const im = new Image();
   im.onload = () => ctx.drawImage(im, 0, 0);
+  im.onerror = paintSample;
   im.src = data;
 }
 
