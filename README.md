@@ -33,3 +33,4 @@ python3 -m http.server 8000
 - Drag and drop images
 - Save as PNG
 - Autosave to your browser's local storage, so a reload keeps your painting
+- Keyboard shortcuts for every tool

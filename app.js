@@ -483,6 +483,28 @@ function toast(msg, action, fn) {
   toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
 }
 
+/* ---------- Keyboard ---------- */
+const KEYMAP = { b: 'brush', m: 'marker', s: 'spray', e: 'eraser', g: 'fill', i: 'picker', l: 'line', r: 'rect', o: 'ellipse' };
+window.addEventListener('keydown', e => {
+  if (e.target.closest?.('input[type=text], textarea')) return;
+  shiftKey = e.shiftKey;
+  if (e.key === 'Escape') { $('#modal').hidden = true; return; }
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (KEYMAP[k]) {
+    if (KEYMAP[k] === 'picker') sizes.__prev = state.tool;
+    setTool(KEYMAP[k]);
+  }
+  else if (e.key === '[') setSize(state.size * 0.85 - 1);
+  else if (e.key === ']') setSize(state.size * 1.15 + 1);
+  if (drawing && SHAPES.includes(state.tool) && cur) shape(cur);
+});
+window.addEventListener('keyup', e => {
+  shiftKey = e.shiftKey;
+  if (drawing && SHAPES.includes(state.tool) && cur) shape(cur);
+});
 
 /* ---------- Boot ---------- */
 setColor(state.color);
