@@ -48,6 +48,7 @@ header { display: flex; align-items: center; gap: 12px; padding-block: 10px; fle
 .tool[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
 .tool svg { width: 22px; height: 22px; }
 .rail .sep { height: 1px; background: var(--line); margin: 4px 2px; flex: none; }
+.tool kbd { position: absolute; right: 3px; bottom: 2px; font-family: var(--mono); font-size: 9px; opacity: .6; }
 
 .stage { position: relative; min-width: 0; min-height: 0; background: var(--stage); border-radius: 12px; display: grid; place-items: center; overflow: hidden; touch-action: none; }
 .paper { position: relative; background: #ffffff; box-shadow: 0 2px 14px var(--shadow); }

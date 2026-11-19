@@ -47,6 +47,8 @@ TOOLS.forEach(t => {
   const b = document.createElement('button');
   b.className = 'tool'; b.dataset.tool = t.id; b.title = t.name; b.setAttribute('aria-label', t.name);
   b.innerHTML = t.icon;
+  b.title += ` (${t.key})`;
+  b.innerHTML += `<kbd>${t.key}</kbd>`;
   b.onclick = () => setTool(t.id);
   rail.appendChild(b);
 });
