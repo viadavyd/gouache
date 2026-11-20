@@ -118,3 +118,4 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   .rail .sep { width: 1px; height: auto; margin: 2px 4px; }
   .panel { max-height: 34vh; }
 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
