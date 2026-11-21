@@ -48,3 +48,18 @@ python3 -m http.server 8000
 | [ / ] | Smaller / bigger |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
 | Ctrl+V | Paste an image |
+
+## How it works
+
+- **Two canvases.** The painting lives on `#main`, which is transparent. The paper is a white element behind it. Each stroke or shape is drawn on `#overlay` first and then composited onto `#main` in one step when you lift the pointer. This keeps opacity even across a stroke where it overlaps itself.
+- **Blend modes at commit.** The eraser composites with `destination-out` and the marker with `multiply`. Everything else uses `source-over`.
+- **Fill bucket.** A scanline flood fill compares colours as they look on the white paper. The mask then grows by one pixel so the fill tucks under anti-aliased edges.
+- **History.** Undo keeps up to 20 `ImageData` snapshots. That's about 5 MB each at 1400 × 900.
+
+## Files
+
+| File | What it holds |
+| --- | --- |
+| `index.html` | Markup for the header, tool rail, stage and panel |
+| `style.css` | Design tokens, the light and dark themes, and the layout |
+| `app.js` | Tools, drawing, history, import, export and autosave |
