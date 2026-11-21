@@ -95,6 +95,15 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .preview { height: 56px; border-radius: 8px; background: #fff; border: 1px solid var(--line); display: block; width: 100%; }
 .toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg); cursor: pointer; }
 .toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.dims { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.dims label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.dims input { width: 100%; min-width: 0; height: 34px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--raised); font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.dims .btn[type=submit] { grid-column: 1 / -1; justify-content: center; }
+.presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.preset { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--raised); text-align: left; font-size: 12px; font-weight: 500; }
+.preset small { font-family: var(--mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.preset:hover { border-color: var(--muted); }
+.preset[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; color: var(--muted); margin: 0; }
 .keys dt { font-family: var(--mono); color: var(--fg); }
 .keys dd { margin: 0; }

@@ -16,7 +16,8 @@ python3 -m http.server 8000
 
 ## Features
 
-- Freehand brush with smoothed strokes on a 1400 × 900 px canvas
+- Freehand brush with smoothed strokes
+- Resizable canvas, 1400 × 900 px by default: type a size or pick a preset, then crop/extend or stretch the painting. Undo restores the old size
 - Size, opacity and colour controls
 - Pen pressure changes stroke width (stylus and drawing tablets)
 - A palette of 16 named paint colours, plus a custom colour picker
@@ -56,7 +57,8 @@ python3 -m http.server 8000
 - **Two canvases.** The painting lives on `#main`, which is transparent. The paper is a white element behind it. Each stroke or shape is drawn on `#overlay` first and then composited onto `#main` in one step when you lift the pointer. This keeps opacity even across a stroke where it overlaps itself.
 - **Blend modes at commit.** The eraser composites with `destination-out` and the marker with `multiply`. Everything else uses `source-over`.
 - **Fill bucket.** A scanline flood fill compares colours as they look on the white paper. The mask then grows by one pixel so the fill tucks under anti-aliased edges.
-- **History.** Undo keeps up to 20 `ImageData` snapshots. That's about 5 MB each at 1400 × 900.
+- **History.** Undo keeps up to 20 `ImageData` snapshots, capped at 256 MB in total. That's about 5 MB each at 1400 × 900, so very large canvases keep fewer steps. A snapshot remembers its own size, so undoing a resize brings the old size back.
+- **Resizing.** Resizing copies the painting aside, resizes both canvases, then draws it back centred at its old size or stretched to the new one.
 
 ## Files
 

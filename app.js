@@ -2,8 +2,9 @@
 (() => {
 'use strict';
 
-const W = 1400, H = 900;
-const MAX_HISTORY = 20;
+let W = 1400, H = 900;
+const MIN_SIZE = 16, MAX_SIZE = 4096;
+const MAX_HISTORY = 20, MAX_HISTORY_BYTES = 256 * 1024 * 1024;
 const STORE = 'gouache-canvas-v1';
 const $ = s => document.querySelector(s);
 const main = $('#main'), ov = $('#overlay'), paper = $('#paper'), stage = $('#stage');
@@ -155,23 +156,29 @@ new ResizeObserver(fit).observe(stage);
 /* ---------- History ---------- */
 function snapshot() {
   history.push(ctx.getImageData(0, 0, W, H));
-  if (history.length > MAX_HISTORY) history.shift();
+  // Big canvases make big snapshots, so cap history by memory as well as count.
+  let bytes = history.reduce((n, im) => n + im.data.length, 0);
+  while (history.length > 1 && (history.length > MAX_HISTORY || bytes > MAX_HISTORY_BYTES)) bytes -= history.shift().data.length;
   future = [];
   syncHistoryButtons();
 }
 function undo() {
   if (!history.length) return;
   future.push(ctx.getImageData(0, 0, W, H));
-  ctx.putImageData(history.pop(), 0, 0);
+  putSnapshot(history.pop());
   syncHistoryButtons();
   scheduleSave();
 }
 function redo() {
   if (!future.length) return;
   history.push(ctx.getImageData(0, 0, W, H));
-  ctx.putImageData(future.pop(), 0, 0);
+  putSnapshot(future.pop());
   syncHistoryButtons();
   scheduleSave();
+}
+function putSnapshot(im) {
+  if (im.width !== W || im.height !== H) setCanvasDims(im.width, im.height);
+  ctx.putImageData(im, 0, 0);
 }
 function syncHistoryButtons() { $('#undo').disabled = !history.length; $('#redo').disabled = !future.length; }
 $('#undo').onclick = undo;
@@ -354,6 +361,59 @@ function floodFill(p) {
   commit();
 }
 
+/* ---------- Canvas size ---------- */
+// Changes the pixel size of both canvases. Setting width/height wipes them, so callers redraw.
+function setCanvasDims(w, h) {
+  W = w; H = h;
+  main.width = ov.width = w;
+  main.height = ov.height = h;
+  $('#dims').textContent = `${w} × ${h} px`;
+  $('#cw').value = w; $('#ch').value = h;
+  document.querySelectorAll('.preset').forEach(b => b.setAttribute('aria-pressed', +b.dataset.w === w && +b.dataset.h === h));
+  fit();
+}
+function resizeCanvas(w, h, stretch) {
+  if (!Number.isInteger(w) || !Number.isInteger(h) || w < MIN_SIZE || h < MIN_SIZE || w > MAX_SIZE || h > MAX_SIZE) {
+    toast(`Width and height must be whole numbers from ${MIN_SIZE} to ${MAX_SIZE}.`);
+    $('#cw').value = W; $('#ch').value = H;
+    return;
+  }
+  if (w === W && h === H) return;
+  snapshot();
+  const old = document.createElement('canvas');
+  old.width = W; old.height = H;
+  old.getContext('2d').drawImage(main, 0, 0);
+  const ow = W, oh = H;
+  setCanvasDims(w, h);
+  if (stretch) {
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(old, 0, 0, w, h);
+  } else {
+    // Keep the painting at its size and centred: shrinking crops the edges, growing adds paper.
+    ctx.drawImage(old, Math.round((w - ow) / 2), Math.round((h - oh) / 2));
+  }
+  hideSample();
+  scheduleSave();
+  toast(`Canvas resized to ${w} × ${h}`, 'Undo', undo);
+}
+const PRESETS = [
+  ['Default', 1400, 900], ['HD', 1920, 1080], ['Square', 1080, 1080],
+  ['Story', 1080, 1920], ['A4 at 150 dpi', 1240, 1754], ['Icon', 512, 512]
+];
+const presetWrap = $('#presets');
+PRESETS.forEach(([name, w, h]) => {
+  const b = document.createElement('button');
+  b.className = 'preset'; b.dataset.w = w; b.dataset.h = h;
+  b.innerHTML = `<span>${name}</span><small>${w} × ${h}</small>`;
+  b.onclick = () => resizeCanvas(w, h, $('#stretch').checked);
+  presetWrap.appendChild(b);
+});
+$('#sizeForm').onsubmit = e => {
+  e.preventDefault();
+  resizeCanvas(+$('#cw').value, +$('#ch').value, $('#stretch').checked);
+};
+$('#swapDims').onclick = () => resizeCanvas(H, W, $('#stretch').checked);
+
 /* ---------- Clear ---------- */
 function clearCanvas() {
   snapshot();
@@ -464,7 +524,10 @@ function restore() {
   try { data = localStorage.getItem(STORE); } catch { /* storage blocked */ }
   if (!data) { paintSample(); return; }
   const im = new Image();
-  im.onload = () => ctx.drawImage(im, 0, 0);
+  im.onload = () => {
+    if (im.naturalWidth !== W || im.naturalHeight !== H) setCanvasDims(im.naturalWidth, im.naturalHeight);
+    ctx.drawImage(im, 0, 0);
+  };
   im.onerror = paintSample;
   im.src = data;
 }
@@ -488,7 +551,7 @@ function toast(msg, action, fn) {
 /* ---------- Keyboard ---------- */
 const KEYMAP = { b: 'brush', m: 'marker', s: 'spray', e: 'eraser', g: 'fill', i: 'picker', l: 'line', r: 'rect', o: 'ellipse' };
 window.addEventListener('keydown', e => {
-  if (e.target.closest?.('input[type=text], textarea')) return;
+  if (e.target.closest?.('input[type=text], input[type=number], textarea')) return;
   shiftKey = e.shiftKey;
   if (e.key === 'Escape') { $('#modal').hidden = true; return; }
   const k = e.key.toLowerCase();
@@ -511,6 +574,7 @@ window.addEventListener('keyup', e => {
 /* ---------- Boot ---------- */
 setColor(state.color);
 setTool('brush');
+setCanvasDims(W, H);
 syncHistoryButtons();
 fit();
 restore();
