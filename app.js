@@ -278,6 +278,8 @@ ov.addEventListener('pointerdown', e => {
 });
 ov.addEventListener('pointermove', e => {
   moveRing(e);
+  // No button held any more: the release happened somewhere we didn't hear about.
+  if (e.pointerType === 'mouse' && e.buttons === 0) { if (drawing) endStroke(); if (selDrag) selectUp(); }
   if (state.tool === 'select') {
     const p = pt(e);
     if (selDrag) selectMove(p);
@@ -309,6 +311,9 @@ function endStroke() {
 }
 ov.addEventListener('pointerup', endStroke);
 ov.addEventListener('pointercancel', endStroke);
+ov.addEventListener('lostpointercapture', endStroke);
+window.addEventListener('pointerup', endStroke);
+window.addEventListener('blur', endStroke);
 ov.addEventListener('pointerleave', () => { ring.hidden = true; });
 ov.addEventListener('pointerenter', e => moveRing(e));
 function moveRing(e) {
@@ -457,6 +462,9 @@ function selectUp() {
 }
 ov.addEventListener('pointerup', selectUp);
 ov.addEventListener('pointercancel', selectUp);
+ov.addEventListener('lostpointercapture', selectUp);
+window.addEventListener('pointerup', selectUp);
+window.addEventListener('blur', selectUp);
 $('#selAll').onclick = selectAll;
 $('#selCopy').onclick = () => { if (copySelection()) toast('Copied'); };
 $('#selCut').onclick = cutSelection;
@@ -511,10 +519,23 @@ function floodFill(p) {
   const out = octx.createImageData(W, H), o = new Uint32Array(out.data.buffer);
   const n = parseInt(state.color.slice(1), 16);
   const col = (255 << 24) | ((n & 255) << 16) | (((n >> 8) & 255) << 8) | (n >> 16);
-  // Grow the mask by one pixel so fills tuck under anti-aliased edges.
+  // Tuck the fill under anti-aliased edges: also paint a neighbouring pixel when its colour is a
+  // blend between the filled area and the pixel beyond it. Solid line pixels are never blends,
+  // so filling the same area again doesn't creep into the line.
+  const SLACK = 8;
+  const between = (n, f) =>
+    R[n] >= Math.min(tr, R[f]) - SLACK && R[n] <= Math.max(tr, R[f]) + SLACK &&
+    G[n] >= Math.min(tg, G[f]) - SLACK && G[n] <= Math.max(tg, G[f]) + SLACK &&
+    B[n] >= Math.min(tb, B[f]) - SLACK && B[n] <= Math.max(tb, B[f]) + SLACK &&
+    Math.max(Math.abs(R[n] - R[f]), Math.abs(G[n] - G[f]), Math.abs(B[n] - B[f])) > SLACK;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x;
-    if (mask[i] || (x > 0 && mask[i - 1]) || (x < W - 1 && mask[i + 1]) || (y > 0 && mask[i - W]) || (y < H - 1 && mask[i + W])) o[i] = col;
+    if (!mask[i]) continue;
+    o[i] = col;
+    if (x > 1 && !mask[i - 1] && between(i - 1, i - 2)) o[i - 1] = col;
+    if (x < W - 2 && !mask[i + 1] && between(i + 1, i + 2)) o[i + 1] = col;
+    if (y > 1 && !mask[i - W] && between(i - W, i - 2 * W)) o[i - W] = col;
+    if (y < H - 2 && !mask[i + W] && between(i + W, i + 2 * W)) o[i + W] = col;
   }
   snapshot();
   octx.putImageData(out, 0, 0);
