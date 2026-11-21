@@ -3,6 +3,8 @@
 A small paint studio that runs in the browser.
 It's plain HTML, CSS and JavaScript, with no build step and no dependencies.
 
+**Try it live:** https://viadavyd.github.io/gouache/
+
 ## Run it
 
 Open `index.html` in a browser. To serve it locally instead:
