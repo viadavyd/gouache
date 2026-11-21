@@ -36,3 +36,15 @@ python3 -m http.server 8000
 - Keyboard shortcuts for every tool
 - Light and dark themes that follow your system setting
 - A layout that works on phones
+
+## Keyboard shortcuts
+
+| Key | Action |
+| --- | --- |
+| B / M / S / E | Brush, marker, spray, eraser |
+| G / I | Fill bucket, colour picker |
+| L / R / O | Line, rectangle, ellipse |
+| Shift | Constrain lines to 45°, shapes to squares and circles |
+| [ / ] | Smaller / bigger |
+| Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
+| Ctrl+V | Paste an image |
