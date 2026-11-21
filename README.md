@@ -27,6 +27,7 @@ python3 -m http.server 8000
 - Marker that blends like a highlighter, and an eraser
 - Spray can
 - Line, rectangle and ellipse tools
+- Text in five fonts, with bold and italic. Click and type; Enter places it, Shift+Enter adds a line
 - Hold Shift for 45° lines, squares and circles
 - Fill bucket
 - Colour picker that samples from the canvas
@@ -51,6 +52,7 @@ python3 -m http.server 8000
 | B / M / S / E | Brush, marker, spray, eraser |
 | G / I | Fill bucket, colour picker |
 | L / R / O | Line, rectangle, ellipse |
+| T | Text |
 | Shift | Constrain lines to 45°, shapes to squares and circles |
 | [ / ] | Smaller / bigger |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |

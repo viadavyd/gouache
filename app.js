@@ -33,11 +33,13 @@ const TOOLS = [
   { id: 'line', name: 'Line', key: 'L', icon: ic('<path d="M5 19 19 5"/>') },
   { id: 'rect', name: 'Rectangle', key: 'R', icon: ic('<rect x="4" y="6" width="16" height="12" rx="1"/>') },
   { id: 'ellipse', name: 'Ellipse', key: 'O', icon: ic('<ellipse cx="12" cy="12" rx="8" ry="6"/>') },
+  'sep',
+  { id: 'text', name: 'Text', key: 'T', icon: ic('<path d="M5 7V4h14v3M12 4v16M9 20h6"/>') },
 ];
 const STROKE_TOOLS = ['brush', 'marker', 'spray', 'eraser'], SHAPES = ['line', 'rect', 'ellipse'];
 
-const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false };
-const sizes = { brush: 14, marker: 28, spray: 40, eraser: 40, line: 6, rect: 6, ellipse: 6 };
+const state = { tool: 'brush', color: '#2b3fb8', size: 14, opacity: 1, tol: 40, pressure: true, fillShape: false, font: 'sans', bold: false, italic: false };
+const sizes = { brush: 14, marker: 28, spray: 40, eraser: 40, line: 6, rect: 6, ellipse: 6, text: 48 };
 let history = [], future = [];
 let recent = [];
 let drawing = false, start = null, last = null, lastMid = null, cur = null, sprayTimer = 0, shiftKey = false;
@@ -64,28 +66,31 @@ PIGMENTS.forEach(([name, hex]) => {
 });
 
 function setTool(id) {
-  if (STROKE_TOOLS.includes(state.tool) || SHAPES.includes(state.tool)) sizes[state.tool] = state.size;
+  if (STROKE_TOOLS.includes(state.tool) || SHAPES.includes(state.tool) || state.tool === 'text') sizes[state.tool] = state.size;
   if (id !== 'select') deselect();
+  if (id !== 'text') commitText();
   ov.style.cursor = '';
   state.tool = id;
   document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === id));
   if (sizes[id]) setSize(sizes[id]);
   const t = TOOLS.find(x => x.id === id);
   $('#optTitle').textContent = t.name;
-  $('#rowSize').hidden = !(STROKE_TOOLS.includes(id) || SHAPES.includes(id));
+  $('#rowSize').hidden = !(STROKE_TOOLS.includes(id) || SHAPES.includes(id) || id === 'text');
+  $('#rowText').hidden = id !== 'text';
   $('#rowOpacity').hidden = id === 'picker' || id === 'select';
   $('#rowSel').hidden = id !== 'select';
   $('#rowTol').hidden = id !== 'fill';
   $('#rowPressure').hidden = !['brush', 'marker', 'eraser'].includes(id);
   $('#rowFillShape').hidden = !['rect', 'ellipse'].includes(id);
   $('#preview').hidden = id === 'picker' || id === 'select';
-  paper.dataset.cursor = (id === 'fill' || id === 'picker' || id === 'select' || SHAPES.includes(id)) ? 'cross' : 'ring';
+  paper.dataset.cursor = id === 'text' ? 'text' : (id === 'fill' || id === 'picker' || id === 'select' || SHAPES.includes(id)) ? 'cross' : 'ring';
   drawPreview();
 }
 function setSize(v) {
   state.size = Math.max(1, Math.min(160, Math.round(v)));
   $('#size').value = state.size; $('#sizeOut').textContent = state.size;
   ring.style.width = ring.style.height = Math.max(4, state.size * scale) + 'px';
+  styleText();
   drawPreview();
 }
 function nameFor(hex) {
@@ -100,6 +105,7 @@ function setColor(hex) {
   $('#picker').value = hex;
   $('#colorName').textContent = nameFor(hex);
   document.querySelectorAll('#swatches .sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === hex));
+  styleText();
   drawPreview();
 }
 function addRecent(hex) {
@@ -118,6 +124,7 @@ function drawPreview() {
   const t = state.tool, c = t === 'eraser' ? '#c9ccd4' : state.color, s = Math.min(state.size, 90);
   p.globalAlpha = state.opacity; p.strokeStyle = c; p.fillStyle = c; p.lineCap = p.lineJoin = 'round';
   if (t === 'fill') { p.fillRect(20, 16, 440, 80); return; }
+  if (t === 'text') { p.font = textFont(Math.min(state.size, 72)); p.textBaseline = 'middle'; p.fillText('Aa Gouache', 24, 56); return; }
   if (t === 'spray') {
     for (let i = 0; i < 900; i++) {
       const x = 30 + Math.random() * 420, y = 56 + (Math.random() - .5) * Math.min(s, 80) * Math.random();
@@ -139,6 +146,7 @@ $('#size').oninput = e => setSize(+e.target.value);
 $('#opacity').oninput = e => {
   state.opacity = e.target.value / 100;
   $('#opOut').textContent = e.target.value + '%';
+  styleText();
   drawPreview();
 };
 $('#picker').oninput = e => setColor(e.target.value);
@@ -168,6 +176,7 @@ function snapshot() {
   syncHistoryButtons();
 }
 function undo() {
+  cancelText();
   if (!history.length) return;
   stamp(); dropSelection();
   future.push(ctx.getImageData(0, 0, W, H));
@@ -176,6 +185,7 @@ function undo() {
   scheduleSave();
 }
 function redo() {
+  cancelText();
   if (!future.length) return;
   stamp(); dropSelection();
   history.push(ctx.getImageData(0, 0, W, H));
@@ -269,6 +279,7 @@ ov.addEventListener('pointerdown', e => {
   const p = pt(e);
   shiftKey = e.shiftKey;
   if (state.tool === 'select') { selectDown(e, p); return; }
+  if (state.tool === 'text') { commitText(); startText(p); return; }
   if (state.tool === 'picker') { pick(p); return; }
   if (state.tool === 'fill') { floodFill(p); return; }
   ov.setPointerCapture(e.pointerId);
@@ -323,6 +334,84 @@ function moveRing(e) {
   ring.style.left = (e.clientX - r.left) + 'px';
   ring.style.top = (e.clientY - r.top) + 'px';
 }
+
+/* ---------- Text ---------- */
+// Typing happens in a transparent textarea laid over the canvas, styled to match what will be
+// drawn. Placing the text draws the same lines onto the painting with fillText.
+const FONTS = {
+  sans: '"IBM Plex Sans", system-ui, sans-serif',
+  display: '"Bricolage Grotesque", "IBM Plex Sans", sans-serif',
+  serif: 'Georgia, "Times New Roman", serif',
+  mono: '"IBM Plex Mono", ui-monospace, monospace',
+  hand: '"Caveat", "Comic Sans MS", cursive'
+};
+const LINE_HEIGHT = 1.2;
+const textEl = $('#textInput'), measure = document.createElement('canvas').getContext('2d');
+let textEd = null;
+function textFont(px) {
+  return `${state.italic ? 'italic ' : ''}${state.bold ? 700 : 400} ${px}px ${FONTS[state.font]}`;
+}
+function styleText() {
+  if (!textEd) return;
+  const px = state.size * scale;
+  measure.font = textFont(state.size);
+  const lines = textEl.value.split('\n');
+  const w = Math.max(...lines.map(l => measure.measureText(l).width));
+  Object.assign(textEl.style, {
+    left: textEd.x / W * 100 + '%', top: textEd.y / H * 100 + '%',
+    font: textFont(px), lineHeight: String(LINE_HEIGHT),
+    color: state.color, opacity: state.opacity,
+    width: Math.ceil(w * scale + px) + 'px', height: Math.ceil(lines.length * LINE_HEIGHT * px) + 'px'
+  });
+}
+function startText(p) {
+  textEd = { x: Math.round(p.x), y: Math.round(p.y) };
+  textEl.value = '';
+  textEl.hidden = false;
+  styleText();
+  setTimeout(() => textEl.focus(), 0);
+}
+function cancelText() {
+  textEd = null;
+  textEl.hidden = true;
+  textEl.value = '';
+}
+function commitText() {
+  if (!textEd) return;
+  const { x, y } = textEd, text = textEl.value.replace(/\s+$/, '');
+  cancelText();
+  if (!text.trim()) return;
+  snapshot();
+  ctx.save();
+  ctx.globalAlpha = state.opacity;
+  ctx.fillStyle = state.color;
+  ctx.font = textFont(state.size);
+  // Put the baseline where CSS puts it in the textarea: half the leading, then the font's ascent.
+  ctx.textBaseline = 'alphabetic';
+  const lh = state.size * LINE_HEIGHT, m = ctx.measureText('Hg');
+  const ascent = m.fontBoundingBoxAscent ?? state.size * 0.8, descent = m.fontBoundingBoxDescent ?? state.size * 0.2;
+  const baseline = (lh - (ascent + descent)) / 2 + ascent;
+  text.split('\n').forEach((line, i) => ctx.fillText(line, x, y + lh * i + baseline));
+  ctx.restore();
+  addRecent(state.color);
+  hideSample();
+  scheduleSave();
+}
+textEl.addEventListener('input', styleText);
+textEl.addEventListener('keydown', e => {
+  e.stopPropagation();  // typing must not trigger tool shortcuts
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); }
+  else if (e.key === 'Escape') { e.preventDefault(); cancelText(); }
+});
+function textOption() {
+  try { document.fonts.load(textFont(state.size)); } catch { /* font loading API unavailable */ }
+  styleText();
+  drawPreview();
+  if (textEd) textEl.focus();
+}
+$('#font').onchange = e => { state.font = e.target.value; textOption(); };
+$('#bold').onclick = e => { state.bold = !state.bold; e.currentTarget.setAttribute('aria-pressed', state.bold); textOption(); };
+$('#italic').onclick = e => { state.italic = !state.italic; e.currentTarget.setAttribute('aria-pressed', state.italic); textOption(); };
 
 /* ---------- Selection: select, move, copy, cut, paste ---------- */
 // sel is a rectangle in canvas pixels. While pixels are being moved or pasted they "float"
@@ -587,7 +676,9 @@ function requestedSize() {
 function createCanvas(save) {
   const size = requestedSize();
   if (!size) { showStep(1); return; }
+  commitText();
   if (save) downloadPNG();
+  cancelText();
   deselect();
   snapshot();
   setCanvasDims(size[0], size[1]);
@@ -612,6 +703,7 @@ newModal.onclick = e => { if (e.target === newModal) closeNewCanvas(); };
 
 /* ---------- Clear ---------- */
 function clearCanvas() {
+  cancelText();
   deselect();
   snapshot();
   ctx.clearRect(0, 0, W, H);
@@ -696,6 +788,7 @@ function composite() {
   return c;
 }
 $('#save').onclick = () => {
+  commitText();
   $('#exportImg').src = flattened().toDataURL('image/png');
   $('#modal').hidden = false;
   $('#closeModal').focus();
@@ -754,7 +847,7 @@ function toast(msg, action, fn) {
 }
 
 /* ---------- Keyboard ---------- */
-const KEYMAP = { v: 'select', b: 'brush', m: 'marker', s: 'spray', e: 'eraser', g: 'fill', i: 'picker', l: 'line', r: 'rect', o: 'ellipse' };
+const KEYMAP = { v: 'select', b: 'brush', m: 'marker', s: 'spray', e: 'eraser', g: 'fill', i: 'picker', l: 'line', r: 'rect', o: 'ellipse', t: 'text' };
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape' && e.target.closest?.('input[type=text], input[type=number], textarea')) return;
   shiftKey = e.shiftKey;
