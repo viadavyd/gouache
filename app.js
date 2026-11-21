@@ -20,6 +20,8 @@ const PIGMENTS = [
 ];
 const ic = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const TOOLS = [
+  { id: 'select', name: 'Select', key: 'V', icon: ic('<path d="M4 8V5a1 1 0 0 1 1-1h3M12 4h0M16 4h3a1 1 0 0 1 1 1v3M20 12h0M20 16v3a1 1 0 0 1-1 1h-3M12 20h0M8 20H5a1 1 0 0 1-1-1v-3M4 12h0"/>') },
+  'sep',
   { id: 'brush', name: 'Brush', key: 'B', icon: ic('<path d="M18 3 9 12l3 3 9-9a2.1 2.1 0 0 0-3-3Z"/><path d="M9 12c-3 0-5 2-5 5 0 1.5-1 2.5-2 3 4 1 9 0 10-5"/>') },
   { id: 'marker', name: 'Marker', key: 'M', icon: ic('<path d="m15 4 5 5-9 9H6v-5Z"/><path d="M4 21h8"/>') },
   { id: 'spray', name: 'Spray', key: 'S', icon: ic('<rect x="5" y="9" width="8" height="12" rx="2"/><path d="M7 9V6h4v3"/><circle cx="17" cy="5" r=".6"/><circle cx="20" cy="7" r=".6"/><circle cx="17" cy="9" r=".6"/><circle cx="20" cy="3" r=".6"/>') },
@@ -63,18 +65,21 @@ PIGMENTS.forEach(([name, hex]) => {
 
 function setTool(id) {
   if (STROKE_TOOLS.includes(state.tool) || SHAPES.includes(state.tool)) sizes[state.tool] = state.size;
+  if (id !== 'select') deselect();
+  ov.style.cursor = '';
   state.tool = id;
   document.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === id));
   if (sizes[id]) setSize(sizes[id]);
   const t = TOOLS.find(x => x.id === id);
   $('#optTitle').textContent = t.name;
   $('#rowSize').hidden = !(STROKE_TOOLS.includes(id) || SHAPES.includes(id));
-  $('#rowOpacity').hidden = id === 'picker';
+  $('#rowOpacity').hidden = id === 'picker' || id === 'select';
+  $('#rowSel').hidden = id !== 'select';
   $('#rowTol').hidden = id !== 'fill';
   $('#rowPressure').hidden = !['brush', 'marker', 'eraser'].includes(id);
   $('#rowFillShape').hidden = !['rect', 'ellipse'].includes(id);
-  $('#preview').hidden = id === 'picker';
-  paper.dataset.cursor = (id === 'fill' || id === 'picker' || SHAPES.includes(id)) ? 'cross' : 'ring';
+  $('#preview').hidden = id === 'picker' || id === 'select';
+  paper.dataset.cursor = (id === 'fill' || id === 'picker' || id === 'select' || SHAPES.includes(id)) ? 'cross' : 'ring';
   drawPreview();
 }
 function setSize(v) {
@@ -164,6 +169,7 @@ function snapshot() {
 }
 function undo() {
   if (!history.length) return;
+  stamp(); dropSelection();
   future.push(ctx.getImageData(0, 0, W, H));
   putSnapshot(history.pop());
   syncHistoryButtons();
@@ -171,6 +177,7 @@ function undo() {
 }
 function redo() {
   if (!future.length) return;
+  stamp(); dropSelection();
   history.push(ctx.getImageData(0, 0, W, H));
   putSnapshot(future.pop());
   syncHistoryButtons();
@@ -261,6 +268,7 @@ ov.addEventListener('pointerdown', e => {
   e.preventDefault();
   const p = pt(e);
   shiftKey = e.shiftKey;
+  if (state.tool === 'select') { selectDown(e, p); return; }
   if (state.tool === 'picker') { pick(p); return; }
   if (state.tool === 'fill') { floodFill(p); return; }
   ov.setPointerCapture(e.pointerId);
@@ -270,6 +278,12 @@ ov.addEventListener('pointerdown', e => {
 });
 ov.addEventListener('pointermove', e => {
   moveRing(e);
+  if (state.tool === 'select') {
+    const p = pt(e);
+    if (selDrag) selectMove(p);
+    ov.style.cursor = selDrag?.mode === 'move' || inSel(p) ? 'move' : '';
+    return;
+  }
   if (!drawing) return;
   shiftKey = e.shiftKey;
   const coalesced = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
@@ -304,6 +318,152 @@ function moveRing(e) {
   ring.style.left = (e.clientX - r.left) + 'px';
   ring.style.top = (e.clientY - r.top) + 'px';
 }
+
+/* ---------- Selection: select, move, copy, cut, paste ---------- */
+// sel is a rectangle in canvas pixels. While pixels are being moved or pasted they "float"
+// in their own canvas above the painting and are stamped back down when you're done.
+const selBox = $('#sel');
+let sel = null, floating = null, selDrag = null;
+let clip = null, preferInternalClip = false;
+
+function showSelection() {
+  selBox.hidden = !sel;
+  updateSelButtons();
+  if (!sel) { selBox.replaceChildren(); return; }
+  Object.assign(selBox.style, {
+    left: sel.x / W * 100 + '%', top: sel.y / H * 100 + '%',
+    width: sel.w / W * 100 + '%', height: sel.h / H * 100 + '%'
+  });
+  if (floating && selBox.firstChild !== floating) selBox.replaceChildren(floating);
+  if (!floating) selBox.replaceChildren();
+}
+function updateSelButtons() {
+  for (const id of ['#selCopy', '#selCut', '#selDelete', '#selNone']) $(id).disabled = !sel;
+}
+const inSel = p => sel && p.x >= sel.x && p.x < sel.x + sel.w && p.y >= sel.y && p.y < sel.y + sel.h;
+function regionCanvas(src, x, y, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, w, h);
+  return c;
+}
+// Lift the selected pixels off the painting so they can move. One undo step covers the whole move.
+function lift() {
+  if (!sel || floating) return;
+  snapshot();
+  floating = regionCanvas(main, sel.x, sel.y, sel.w, sel.h);
+  ctx.clearRect(sel.x, sel.y, sel.w, sel.h);
+  showSelection();
+}
+// Put floating pixels down onto the painting.
+function stamp() {
+  if (!floating) return;
+  ctx.drawImage(floating, sel.x, sel.y);
+  floating = null;
+  showSelection();
+  scheduleSave();
+}
+function deselect() { stamp(); sel = null; showSelection(); }
+function dropSelection() { floating = null; sel = null; selDrag = null; showSelection(); }
+function selectAll() {
+  if (state.tool !== 'select') setTool('select');
+  stamp();
+  sel = { x: 0, y: 0, w: W, h: H };
+  showSelection();
+}
+function copySelection() {
+  if (!sel) return false;
+  clip = floating ? regionCanvas(floating, 0, 0, sel.w, sel.h) : regionCanvas(main, sel.x, sel.y, sel.w, sel.h);
+  preferInternalClip = true;
+  // Also put it on the system clipboard so it can be pasted into other apps.
+  try {
+    const blob = new Promise(res => clip.toBlob(res, 'image/png'));
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      .then(() => { preferInternalClip = false; }, () => {});
+  } catch { /* system clipboard unavailable: Gouache keeps its own copy */ }
+  return true;
+}
+function deleteSelection() {
+  if (!sel) return;
+  if (floating) floating = null;          // already lifted, so undo restores it
+  else { snapshot(); ctx.clearRect(sel.x, sel.y, sel.w, sel.h); }
+  sel = null;
+  showSelection();
+  scheduleSave();
+}
+function cutSelection() {
+  if (!copySelection()) return;
+  deleteSelection();
+  toast('Cut', 'Undo', undo);
+}
+// Paste an image or canvas as a floating selection in the middle of the canvas.
+function pasteImage(src) {
+  if (state.tool !== 'select') setTool('select');
+  deselect();
+  const sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height;
+  const s = Math.min(W / sw, H / sh, 1), w = Math.max(1, Math.round(sw * s)), h = Math.max(1, Math.round(sh * s));
+  snapshot();
+  floating = document.createElement('canvas');
+  floating.width = w; floating.height = h;
+  floating.getContext('2d').drawImage(src, 0, 0, w, h);
+  sel = { x: Math.round((W - w) / 2), y: Math.round((H - h) / 2), w, h };
+  showSelection();
+  hideSample();
+  toast('Pasted. Drag to move it, press Enter to place it', 'Undo', undo);
+}
+function pasteFromButton() {
+  if (clip) { pasteImage(clip); return; }
+  const none = () => toast('Nothing to paste. Copy a selection, or press Ctrl+V to paste an image.');
+  if (!navigator.clipboard?.read) { none(); return; }
+  navigator.clipboard.read().then(async items => {
+    for (const it of items) {
+      const type = it.types.find(t => t.startsWith('image/'));
+      if (type) { placeImage(new File([await it.getType(type)], 'pasted', { type })); return; }
+    }
+    none();
+  }, none);
+}
+function nudge(dx, dy) {
+  lift();
+  sel.x += dx; sel.y += dy;
+  showSelection();
+}
+
+function selectDown(e, p) {
+  ov.setPointerCapture(e.pointerId);
+  if (inSel(p)) {
+    lift();
+    selDrag = { mode: 'move', dx: p.x - sel.x, dy: p.y - sel.y };
+  } else {
+    deselect();
+    selDrag = { mode: 'new', x: p.x, y: p.y };
+  }
+}
+function selectMove(p) {
+  if (selDrag.mode === 'move') {
+    sel.x = Math.round(p.x - selDrag.dx); sel.y = Math.round(p.y - selDrag.dy);
+  } else {
+    const x0 = Math.max(0, Math.min(selDrag.x, p.x)), y0 = Math.max(0, Math.min(selDrag.y, p.y));
+    const x1 = Math.min(W, Math.max(selDrag.x, p.x)), y1 = Math.min(H, Math.max(selDrag.y, p.y));
+    sel = { x: Math.floor(x0), y: Math.floor(y0), w: Math.ceil(x1) - Math.floor(x0), h: Math.ceil(y1) - Math.floor(y0) };
+  }
+  showSelection();
+}
+function selectUp() {
+  if (!selDrag) return;
+  if (selDrag.mode === 'new' && sel && (sel.w < 2 || sel.h < 2)) sel = null;  // a click just deselects
+  selDrag = null;
+  showSelection();
+}
+ov.addEventListener('pointerup', selectUp);
+ov.addEventListener('pointercancel', selectUp);
+$('#selAll').onclick = selectAll;
+$('#selCopy').onclick = () => { if (copySelection()) toast('Copied'); };
+$('#selCut').onclick = cutSelection;
+$('#selPaste').onclick = pasteFromButton;
+$('#selDelete').onclick = deleteSelection;
+$('#selNone').onclick = deselect;
+window.addEventListener('blur', () => { preferInternalClip = false; });
 
 /* ---------- Colour picker ---------- */
 const hex2 = n => n.toString(16).padStart(2, '0');
@@ -407,6 +567,7 @@ function createCanvas(save) {
   const size = requestedSize();
   if (!size) { showStep(1); return; }
   if (save) downloadPNG();
+  deselect();
   snapshot();
   setCanvasDims(size[0], size[1]);
   hideSample();
@@ -430,6 +591,7 @@ newModal.onclick = e => { if (e.target === newModal) closeNewCanvas(); };
 
 /* ---------- Clear ---------- */
 function clearCanvas() {
+  deselect();
   snapshot();
   ctx.clearRect(0, 0, W, H);
   hideSample();
@@ -472,20 +634,18 @@ function placeImage(file) {
   if (!file || !file.type.startsWith('image/')) { toast('That file isn’t an image. Try a PNG, JPG, GIF or WebP.'); return; }
   const url = URL.createObjectURL(file), im = new Image();
   im.onload = () => {
-    snapshot();
-    const s = Math.min(W / im.width, H / im.height, 1), w = im.width * s, h = im.height * s;
-    ctx.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+    pasteImage(im);
     URL.revokeObjectURL(url);
-    hideSample();
-    scheduleSave();
-    toast('Image placed', 'Undo', undo);
   };
   im.onerror = () => toast('Couldn’t read that image.');
   im.src = url;
 }
 $('#file').onchange = e => { placeImage(e.target.files[0]); e.target.value = ''; };
 window.addEventListener('paste', e => {
+  if (e.target.closest?.('input, textarea') || !newModal.hidden || !$('#modal').hidden) return;
   const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  // Use Gouache's own copy when the system clipboard couldn't take it.
+  if (clip && (preferInternalClip || !item)) { e.preventDefault(); pasteImage(clip); return; }
   if (item) { e.preventDefault(); placeImage(item.getAsFile()); }
 });
 let dragDepth = 0;
@@ -502,7 +662,16 @@ function flattened() {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const x = c.getContext('2d');
-  x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H); x.drawImage(main, 0, 0);
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H); x.drawImage(composite(), 0, 0);
+  return c;
+}
+// The painting plus anything floating in the selection.
+function composite() {
+  if (!floating) return main;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.drawImage(main, 0, 0); x.drawImage(floating, sel.x, sel.y);
   return c;
 }
 $('#save').onclick = () => {
@@ -531,7 +700,7 @@ let saveTimer = 0;
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(STORE, main.toDataURL('image/png')); } catch { /* storage full or blocked */ }
+    try { localStorage.setItem(STORE, composite().toDataURL('image/png')); } catch { /* storage full or blocked */ }
   }, 700);
 }
 function restore() {
@@ -564,15 +733,33 @@ function toast(msg, action, fn) {
 }
 
 /* ---------- Keyboard ---------- */
-const KEYMAP = { b: 'brush', m: 'marker', s: 'spray', e: 'eraser', g: 'fill', i: 'picker', l: 'line', r: 'rect', o: 'ellipse' };
+const KEYMAP = { v: 'select', b: 'brush', m: 'marker', s: 'spray', e: 'eraser', g: 'fill', i: 'picker', l: 'line', r: 'rect', o: 'ellipse' };
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape' && e.target.closest?.('input[type=text], input[type=number], textarea')) return;
   shiftKey = e.shiftKey;
-  if (e.key === 'Escape') { $('#modal').hidden = true; if (!newModal.hidden) closeNewCanvas(); return; }
+  if (e.key === 'Escape') {
+    if (!$('#modal').hidden) $('#modal').hidden = true;
+    else if (!newModal.hidden) closeNewCanvas();
+    else if (sel) deselect();
+    return;
+  }
+  if (!$('#modal').hidden || !newModal.hidden) return;
   const k = e.key.toLowerCase();
   if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 'a') { e.preventDefault(); selectAll(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 'c' && sel) { e.preventDefault(); copySelection(); toast('Copied'); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 'x' && sel) { e.preventDefault(); cutSelection(); return; }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (sel && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); deleteSelection(); return; }
+  if (sel && e.key === 'Enter') { e.preventDefault(); deselect(); return; }
+  const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  if (sel && arrows[e.key] && !e.target.closest?.('input, button')) {
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : 1;
+    nudge(arrows[e.key][0] * step, arrows[e.key][1] * step);
+    return;
+  }
   if (KEYMAP[k]) {
     if (KEYMAP[k] === 'picker') sizes.__prev = state.tool;
     setTool(KEYMAP[k]);

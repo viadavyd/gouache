@@ -31,6 +31,7 @@
     <div class="paper" id="paper" data-cursor="ring">
       <canvas id="main" width="1400" height="900"></canvas>
       <canvas id="overlay" width="1400" height="900"></canvas>
+      <div class="sel" id="sel" hidden></div>
       <div class="ring" id="ring" hidden></div>
     </div>
     <div class="chip" id="sample" hidden>Sample sketch <button id="sampleClear">Start blank</button></div>
@@ -57,18 +58,35 @@
       <div class="row" id="rowOpacity"><label for="opacity">Opacity</label><input type="range" id="opacity" min="5" max="100" value="100"><output id="opOut">100%</output></div>
       <div class="row" id="rowTol" hidden><label for="tol">Tolerance</label><input type="range" id="tol" min="0" max="128" value="40"><output id="tolOut">40</output></div>
       <label class="toggle" id="rowPressure"><input type="checkbox" id="pressure" checked> Pen pressure changes width</label>
+      <div class="sel-panel" id="rowSel" hidden>
+        <p class="hint">Drag to select. Drag inside the selection to move it, or nudge it with the arrow keys.</p>
+        <div class="sel-actions">
+          <button type="button" class="btn" id="selCopy" disabled>Copy</button>
+          <button type="button" class="btn" id="selCut" disabled>Cut</button>
+          <button type="button" class="btn" id="selPaste">Paste</button>
+          <button type="button" class="btn" id="selDelete" disabled>Delete</button>
+          <button type="button" class="btn" id="selAll">Select all</button>
+          <button type="button" class="btn" id="selNone" disabled>Deselect</button>
+        </div>
+      </div>
       <label class="toggle" id="rowFillShape" hidden><input type="checkbox" id="fillShape"> Fill the shape</label>
     </section>
     <section class="sec">
       <h2>Shortcuts</h2>
       <dl class="keys">
+        <dt>V</dt><dd>Select</dd>
+        <dt>Ctrl C X V</dt><dd>Copy, cut, paste</dd>
+        <dt>Ctrl A</dt><dd>Select all</dd>
+        <dt>Del</dt><dd>Delete the selection</dd>
+        <dt>Enter</dt><dd>Place it</dd>
+        <dt>Esc</dt><dd>Deselect</dd>
+        <dt>Arrows</dt><dd>Nudge it (Shift: 10 px)</dd>
         <dt>B M S E</dt><dd>Brush, marker, spray, eraser</dd>
         <dt>G I</dt><dd>Fill bucket, colour picker</dd>
         <dt>L R O</dt><dd>Line, rectangle, ellipse</dd>
         <dt>Shift</dt><dd>Straight 45° lines, squares, circles</dd>
         <dt>[ ]</dt><dd>Smaller / bigger</dd>
         <dt>Ctrl Z</dt><dd>Undo · add Shift to redo</dd>
-        <dt>Ctrl V</dt><dd>Paste an image</dd>
       </dl>
     </section>
   </aside>

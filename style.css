@@ -66,10 +66,12 @@ header { display: flex; align-items: center; gap: 12px; padding-block: 10px; fle
 .tool kbd { position: absolute; right: 3px; bottom: 2px; font-family: var(--mono); font-size: 9px; opacity: .6; }
 
 .stage { position: relative; min-width: 0; min-height: 0; background: var(--stage); border-radius: 12px; display: grid; place-items: center; overflow: hidden; touch-action: none; }
-.paper { position: relative; background: #ffffff; box-shadow: 0 2px 14px var(--shadow); }
+.paper { position: relative; overflow: hidden; background: #ffffff; box-shadow: 0 2px 14px var(--shadow); }
 .paper canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #overlay { touch-action: none; cursor: crosshair; }
 .paper[data-cursor="ring"] #overlay { cursor: none; }
+.sel { position: absolute; pointer-events: none; outline: 1px dashed #1a1d26; box-shadow: 0 0 0 1px rgba(255, 255, 255, .9); }
+.sel canvas { image-rendering: auto; }
 .ring { position: absolute; pointer-events: none; border-radius: 50%; border: 1px solid #fff; mix-blend-mode: difference; transform: translate(-50%, -50%); left: 0; top: 0; }
 .chip { position: absolute; left: 12px; top: 12px; font-size: 12px; background: var(--raised); color: var(--fg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; display: flex; gap: 8px; align-items: center; box-shadow: 0 1px 4px var(--shadow); }
 .chip button { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 0; }
@@ -106,6 +108,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .preset small { font-family: var(--mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .preset:hover { border-color: var(--muted); }
 .preset[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.sel-panel { display: flex; flex-direction: column; gap: 8px; }
+.sel-panel .hint { margin: 0; font-size: 12px; color: var(--muted); }
+.sel-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.sel-actions .btn { justify-content: center; padding: 0 6px; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; color: var(--muted); margin: 0; }
 .keys dt { font-family: var(--mono); color: var(--fg); }
 .keys dd { margin: 0; }
